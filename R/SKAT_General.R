@@ -1,389 +1,387 @@
 #try LR test
 #get U1 D1
 fit.optim=function(par,fn,namesPar,logVar=T,...){
-fit<-optim(par=par,fn=fn,logVar=logVar,...)
-if(logVar==T){fit$par=exp(fit$par)}
-names(fit$par)=namesPar
-fit$loglik=-1/2*fit$value
-return(fit)
+  fit<-optim(par=par,fn=fn,logVar=logVar,...)
+  if(logVar==T){fit$par=exp(fit$par)}
+  names(fit$par)=namesPar
+  fit$loglik=-1/2*fit$value
+  return(fit)
 }
 getDL=function(var_e,taud,d1,n,tU1y,tU1X,tXX=NULL,tXy=NULL,tyy=NULL,tauw=NULL,kw=NULL,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=NULL,getQ=F,getS=F,tZtZt=NULL,tU1Zt=NULL,tXZt=NULL,tyZt=NULL,tWZt=NULL){
-	out=list()
-	kd=length(d1)
-	d_sharp=1/(d1*taud+var_e)
-	out$d_sharp=d_sharp
-	
-	
-	if(kd<n){
-	d_tau=d_sharp-1/var_e
-	tXU1d_tau=sweep(t(tU1X),2,d_tau,"*")
-	tXVdX=tXU1d_tau%*%tU1X+tXX/var_e
-	tXVdy=tXU1d_tau%*%tU1y+tXy/var_e
-	out$d_tau=d_tau
-	}else{
-		tXU1d_sharp=sweep(t(tU1X),2,d_sharp,"*")
-		tXVdX=tXU1d_sharp%*%tU1X
-		tXVdy=tXU1d_sharp%*%tU1y
-	}
-	if(!is.null(tU1W)){
-	if(kd<n){	
-	tWU1d_tau=sweep(t(tU1W),2,d_tau,"*")	
-	tXVdW=tXU1d_tau%*%tU1W+tXW/var_e
-	tWVdW=tWU1d_tau%*%tU1W+tWW/var_e
-	tWVdy=tWU1d_tau%*%tU1y+tWy/var_e
-	
-	}else{
-		tWU1d_sharp=sweep(t(tU1W),2,d_sharp,"*")	
-		tXVdW=tXU1d_sharp%*%tU1W
-		tWVdW=tWU1d_sharp%*%tU1W
-		tWVdy=tWU1d_sharp%*%tU1y
-	}
-	#Gamma=rep(tau,k) both k and tau are vectors
-	Gamma=rep(tauw,kw)
-	Gamma_tWVdW=sweep(tWVdW,2,Gamma,"*")
-	Vgamma=Gamma_tWVdW
-	diag(Vgamma)=diag(Vgamma+1)
-	Cgamma=sweep(solve(Vgamma),2,Gamma,"*")
-	tXVinvX=tXVdX-tXVdW%*%Cgamma%*%t(tXVdW)
-	tXVinvy=tXVdy-tXVdW%*%Cgamma%*%tWVdy
-	out$tWVdy=tWVdy
-   	out$tXVdW=tXVdW
-   	out$Vgamma=Vgamma
-   	out$Cgamma=Cgamma	
-	}else{
-		tXVinvX=tXVdX
-		tXVinvy=tXVdy
-	}
-	
-	invtXVinvX=solve(tXVinvX)
-	hat_alpha=invtXVinvX%*%tXVinvy
-	tU1_ehat=tU1y-as.vector(tU1X%*%hat_alpha)
-	out$hat_alpha=hat_alpha
-	out$tU1_ehat=tU1_ehat
-	out$tXVinvX=tXVinvX
-	
-	if(getQ==T|getS==T){
-		
-	if(kd<n){
+  out=list()
+  kd=length(d1)
+  d_sharp=1/(d1*taud+var_e)
+  out$d_sharp=d_sharp
+  
+  
+  if(kd<n){
+    d_tau=d_sharp-1/var_e
+    tXU1d_tau=sweep(t(tU1X),2,d_tau,"*")
+    tXVdX=tXU1d_tau%*%tU1X+tXX/var_e
+    tXVdy=tXU1d_tau%*%tU1y+tXy/var_e
+    out$d_tau=d_tau
+  }else{
+    tXU1d_sharp=sweep(t(tU1X),2,d_sharp,"*")
+    tXVdX=tXU1d_sharp%*%tU1X
+    tXVdy=tXU1d_sharp%*%tU1y
+  }
+  if(!is.null(tU1W)){
+    if(kd<n){	
+      tWU1d_tau=sweep(t(tU1W),2,d_tau,"*")	
+      tXVdW=tXU1d_tau%*%tU1W+tXW/var_e
+      tWVdW=tWU1d_tau%*%tU1W+tWW/var_e
+      tWVdy=tWU1d_tau%*%tU1y+tWy/var_e
+      
+    }else{
+      tWU1d_sharp=sweep(t(tU1W),2,d_sharp,"*")	
+      tXVdW=tXU1d_sharp%*%tU1W
+      tWVdW=tWU1d_sharp%*%tU1W
+      tWVdy=tWU1d_sharp%*%tU1y
+    }
+    #Gamma=rep(tau,k) both k and tau are vectors
+    Gamma=rep(tauw,kw)
+    Gamma_tWVdW=sweep(tWVdW,2,Gamma,"*")
+    Vgamma=Gamma_tWVdW
+    diag(Vgamma)=diag(Vgamma+1)
+    Cgamma=sweep(solve(Vgamma),2,Gamma,"*")
+    tXVinvX=tXVdX-tXVdW%*%Cgamma%*%t(tXVdW)
+    tXVinvy=tXVdy-tXVdW%*%Cgamma%*%tWVdy
+    out$tWVdy=tWVdy
+    out$tXVdW=tXVdW
+    out$Vgamma=Vgamma
+    out$Cgamma=Cgamma	
+  }else{
+    tXVinvX=tXVdX
+    tXVinvy=tXVdy
+  }
+  
+  invtXVinvX=solve(tXVinvX)
+  hat_alpha=invtXVinvX%*%tXVinvy
+  tU1_ehat=tU1y-as.vector(tU1X%*%hat_alpha)
+  out$hat_alpha=hat_alpha
+  out$tU1_ehat=tU1_ehat
+  out$tXVinvX=tXVinvX
+  
+  if(getQ==T|getS==T){
     
-    tXVdZt=tXU1d_tau%*%tU1Zt+tXZt/var_e			
-		tyVdZt=t(tU1y*d_tau)%*%tU1Zt+tyZt/var_e
-		tZtU1d_tau=sweep(t(tU1Zt),2,d_tau,"*")
-		tZtVdZt=tZtU1d_tau%*%tU1Zt+tZtZt/var_e
-		if(!is.null(tauw)){tWVdZt=tWU1d_tau%*%tU1Zt+tWZt/var_e}
-			}else{
-				tXVdZt=tXU1d_sharp%*%tU1Zt
-				tyVdZt=t(tU1y*d_sharp)%*%tU1Zt	
-				tZtU1d_sharp=sweep(t(tU1Zt),2,d_sharp,"*")
-				tZtVdZt=tZtU1d_sharp%*%tU1Zt
-				if(!is.null(tauW))tWVdZt=tWU1d_sharp%*%tU1Zt
-			}
-		tehatVdZt=tyVdZt-t(hat_alpha)%*%tXVdZt		
-	    
-		if(!is.null(tauw)){	
-		tehatVdW=t(tWVdy)-t(hat_alpha)%*%tXVdW				
-		LQ=tehatVdZt-tehatVdW%*%Cgamma%*%tWVdZt
-		tZtVinvZt=tZtVdZt-t(tWVdZt)%*%Cgamma%*%tWVdZt
-		tXVinvZt=tXVdZt-tXVdW%*%Cgamma%*%tWVdZt
-		}else{
-			LQ=tehatVdZt
-			tZtVinvZt=tZtVdZt
-			tXVinvZt=tXVdZt
-			}
-		
-		tZtPZt=tZtVinvZt-t(tXVinvZt)%*%invtXVinvX%*%tXVinvZt
-        Q=1/2*sum(LQ^2)
-       if(getQ==T) {
-       	lambda=eigen(tZtPZt,only.values=T,symmetric=T)$values/2
-       	out$Q=Q
-	out$lambda=lambda
-       	}
-		
-	if(getS==T){
-		out$sdS=sqrt(sum(tZtPZt^2)/2)
-		out$S=Q-sum(diag(tZtPZt))/2
-
-	}
-	
-	}
-	
-	return(out)
-	}
+    if(kd<n){
+      
+      tXVdZt=tXU1d_tau%*%tU1Zt+tXZt/var_e			
+      tyVdZt=t(tU1y*d_tau)%*%tU1Zt+tyZt/var_e
+      tZtU1d_tau=sweep(t(tU1Zt),2,d_tau,"*")
+      tZtVdZt=tZtU1d_tau%*%tU1Zt+tZtZt/var_e
+      if(!is.null(tauw)){tWVdZt=tWU1d_tau%*%tU1Zt+tWZt/var_e}
+    }else{
+      tXVdZt=tXU1d_sharp%*%tU1Zt
+      tyVdZt=t(tU1y*d_sharp)%*%tU1Zt	
+      tZtU1d_sharp=sweep(t(tU1Zt),2,d_sharp,"*")
+      tZtVdZt=tZtU1d_sharp%*%tU1Zt
+      if(!is.null(tauW))tWVdZt=tWU1d_sharp%*%tU1Zt
+    }
+    tehatVdZt=tyVdZt-t(hat_alpha)%*%tXVdZt		
+    
+    if(!is.null(tauw)){	
+      tehatVdW=t(tWVdy)-t(hat_alpha)%*%tXVdW				
+      LQ=tehatVdZt-tehatVdW%*%Cgamma%*%tWVdZt
+      tZtVinvZt=tZtVdZt-t(tWVdZt)%*%Cgamma%*%tWVdZt
+      tXVinvZt=tXVdZt-tXVdW%*%Cgamma%*%tWVdZt
+    }else{
+      LQ=tehatVdZt
+      tZtVinvZt=tZtVdZt
+      tXVinvZt=tXVdZt
+    }
+    
+    tZtPZt=tZtVinvZt-t(tXVinvZt)%*%invtXVinvX%*%tXVinvZt
+    Q=1/2*sum(LQ^2)
+    if(getQ==T) {
+      lambda=eigen(tZtPZt,only.values=T,symmetric=T)$values/2
+      out$Q=Q
+      out$lambda=lambda
+    }
+    
+    if(getS==T){
+      out$sdS=sqrt(sum(tZtPZt^2)/2)
+      out$S=Q-sum(diag(tZtPZt))/2
+      
+    }
+    
+  }
+  
+  return(out)
+}
 neg2Log=function(Var,tU1y,tU1X,tXX,tXy,tyy,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=NULL,d1,n,kw=NULL,logVar=T,tauRel=NULL){
-	#d1 and U1 from d1=svd(Zd)$d^2, U1=svd(Zd)$u 
-	if(logVar==T){
-	Var=exp(Var)
-	}
-	var_e=Var[1]
-	taud=Var[2]
-	if(length(Var)<=2){tauw=NULL} else {tauw=Var[-c(1:2)]}
-    if(!is.null(tauRel)){
-	#relationship between taud and tauw
-	if(!is.character(tauRel))stop("tauRel must be characters")
+  #d1 and U1 from d1=svd(Zd)$d^2, U1=svd(Zd)$u 
+  if(logVar==T){
+    Var=exp(Var)
+  }
+  var_e=Var[1]
+  taud=Var[2]
+  if(length(Var)<=2){tauw=NULL} else {tauw=Var[-c(1:2)]}
+  if(!is.null(tauRel)){
+    #relationship between taud and tauw
+    if(!is.character(tauRel))stop("tauRel must be characters")
     if(!grepl("tauw",tauRel) & !grepl("taud",tauRel))stop("either tauw or taud should be 	specified")
-   eval(parse(tauRel))    	
+    eval(parse(tauRel))    	
+  }
+  
+  kd=length(d1)
+  terms=getDL(var_e=var_e,taud=taud,tauw=tauw,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tU1W=tU1W,tXW=tXW,tWW=tWW,tWy=tWy,d1=d1,n=n,kw=kw,getQ=F)
+  tXVinvX=terms$tXVinvX
+  tU1_ehat=terms$tU1_ehat
+  hat_alpha=terms$hat_alpha
+  #Zd low rank (kd<n)
+  if(kd<n){
+    d_tau=terms$d_tau	
+    logDetVd=sum(log(d1*taud+var_e))+(n-kd)*log(var_e) 
+    tehat_Vd_ehat=sum(tU1_ehat^2*d_tau)+(tyy+t(hat_alpha)%*%tXX%*%hat_alpha-2*sum(hat_alpha*tXy))/var_e
+  }else{
+    d_sharp=terms$d_sharp
+    logDetVd=sum(log(d1*taud+var_e)) 
+    tehat_Vd_ehat=sum(tU1_ehat^2*d_sharp)
+  }
+  
+  if(is.null(tU1W)){	
+    neg2logLik1=logDetVd
+    neg2logLik3=tehat_Vd_ehat
+  }else{
+    tWVdy=terms$tWVdy
+    tXVdW=terms$tXVdW
+    Vgamma=terms$Vgamma
+    Cgamma=terms$Cgamma	
+    tW_Vd_ehat=tWVdy-t(tXVdW)%*%hat_alpha	
+    logDetVgamma=log(det(Vgamma))	
+    neg2logLik1=logDetVd+logDetVgamma
+    tehat_Vd_W_Cgamma_tW_Vd_ehat=t(tW_Vd_ehat)%*%Cgamma%*%tW_Vd_ehat
+    neg2logLik3=tehat_Vd_ehat-tehat_Vd_W_Cgamma_tW_Vd_ehat
+  } 	
+  
+  neg2logLik2=log(det(tXVinvX))
+  
+  out<- sum(neg2logLik1,neg2logLik2,neg2logLik3)
+  return(out)
 }
 
-	    kd=length(d1)
-    	terms=getDL(var_e=var_e,taud=taud,tauw=tauw,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tU1W=tU1W,tXW=tXW,tWW=tWW,tWy=tWy,d1=d1,n=n,kw=kw,getQ=F)
-    tXVinvX=terms$tXVinvX
-    tU1_ehat=terms$tU1_ehat
-    hat_alpha=terms$hat_alpha
-    		#Zd low rank (kd<n)
- 		if(kd<n){
- 		d_tau=terms$d_tau	
- 		logDetVd=sum(log(d1*taud+var_e))+(n-kd)*log(var_e) 
- 		tehat_Vd_ehat=sum(tU1_ehat^2*d_tau)+(tyy+t(hat_alpha)%*%tXX%*%hat_alpha-2*sum(hat_alpha*tXy))/var_e
- 		}else{
- 			d_sharp=terms$d_sharp
- 			logDetVd=sum(log(d1*taud+var_e)) 
- 	    	tehat_Vd_ehat=sum(tU1_ehat^2*d_sharp)
- 		}
- 	
- 	if(is.null(tU1W)){	
- 	neg2logLik1=logDetVd
-    neg2logLik3=tehat_Vd_ehat
-   	}else{
-   	tWVdy=terms$tWVdy
-   	tXVdW=terms$tXVdW
-   	Vgamma=terms$Vgamma
-   	Cgamma=terms$Cgamma	
-   	tW_Vd_ehat=tWVdy-t(tXVdW)%*%hat_alpha	
-   	logDetVgamma=log(det(Vgamma))	
-   	neg2logLik1=logDetVd+logDetVgamma
-   	tehat_Vd_W_Cgamma_tW_Vd_ehat=t(tW_Vd_ehat)%*%Cgamma%*%tW_Vd_ehat
-    neg2logLik3=tehat_Vd_ehat-tehat_Vd_W_Cgamma_tW_Vd_ehat
-   	} 	
-	   
-    neg2logLik2=log(det(tXVinvX))
-    
-   	out<- sum(neg2logLik1,neg2logLik2,neg2logLik3)
- 	return(out)
- }
-
 getEigenZd=function(y,X,Kd=NULL,Zd=NULL,tXX=NULL,tXy=NULL,tyy=NULL){
-	out=list()
-if(!is.null(Kd) & !is.null(Zd)) stop("Only use one of Kd or Zd")
-if(!is.null(Zd)&nrow(Zd)<=ncol(Zd)){
-	stop("Zd has full column rank, please specify Kd instead of Zd" )
-	}	
-if(!is.null(Zd)){	
-	if(is.null(tXX)){tXX=crossprod(X)}else if(nrow(tXX)!=ncol(tXX)) stop("tXX must be square matrix!")
-	if(is.null(tXy)){tXy=crossprod(X,y)}
-	if(is.null(tyy)){tyy=sum(y^2)}
-	#NULL model
-	svdZd=svd(Zd,nv=0)
-	U1=svdZd$u
-	d1=svdZd$d^2 ###Do not forget d^2!!!
-	}else{
-		eigenKd=eigen(Kd,symmetric=T)
-		U1=eigenKd$vectors
-		d1=eigenKd$values	
+  out=list()
+  if(!is.null(Kd) & !is.null(Zd)) stop("Only use one of Kd or Zd")
+  if(!is.null(Zd)&nrow(Zd)<=ncol(Zd)){
+    stop("Zd has full column rank, please specify Kd instead of Zd" )
+  }	
+  if(!is.null(Zd)){	
+    if(is.null(tXX)){tXX=crossprod(X)}else if(nrow(tXX)!=ncol(tXX)) stop("tXX must be square matrix!")
+    if(is.null(tXy)){tXy=crossprod(X,y)}
+    if(is.null(tyy)){tyy=sum(y^2)}
+    #NULL model
+    svdZd=svd(Zd,nv=0)
+    U1=svdZd$u
+    d1=svdZd$d^2 ###Do not forget d^2!!!
+  }else{
+    eigenKd=eigen(Kd,symmetric=T)
+    U1=eigenKd$vectors
+    d1=eigenKd$values	
     tXX=NULL
     tXy=NULL
     tyy=NULL
-	}
-	tU1X=crossprod(U1,X)
-	tU1y=crossprod(U1,y)
-	out$U1=U1
-	out$d1=d1
-	out$tU1X=tU1X
-	out$tU1y=tU1y
+  }
+  tU1X=crossprod(U1,X)
+  tU1y=crossprod(U1,y)
+  out$U1=U1
+  out$d1=d1
+  out$tU1X=tU1X
+  out$tU1y=tU1y
   out$tXX=tXX
   out$tXy=tXy
   out$tyy=tyy
-	return(out)
+  return(out)
 }
 
 testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,SKAT=T,Score=F,LR=F,nperm=0){
-	d1=eigenZd$d1
-	U1=eigenZd$U1
-	tU1X=eigenZd$tU1X
-	tU1y=eigenZd$tU1y
+  d1=eigenZd$d1
+  U1=eigenZd$U1
+  tU1X=eigenZd$tU1X
+  tU1y=eigenZd$tU1y
   tXy=eigenZd$tXy
   tXX=eigenZd$tXX
   tyy=eigenZd$tyy
-if(!is.null(W)){
-	if(is.null(kw))stop("kw must be speficied for W")
-	nw=length(kw)
-	tauw=rep(0,nw)
-	tU1W=crossprod(U1,W)
-	tXW=crossprod(X,W)
-	tWW=crossprod(W,W)
-	tWy=crossprod(W,y)
-	tWZt=crossprod(W,Zt)
-}else {
-	nw=0
-	tauw=NULL
-	tU1W=NULL
-	tXW=NULL
-	tWW=NULL
-	tWy=NULL
-	tWZt=NULL
-	}
-
-tU1Zt=crossprod(U1,Zt)
-tZty=crossprod(Zt,y)
-tyZt=t(tZty)
-tXZt=crossprod(X,Zt)
-tZtZt=crossprod(Zt,Zt)
-##test with low rank Zh	
-	n=length(y)
-	nd=length(d1)
-	namesPar=c("var_e","taud")
-	if(nw>0){namesPar=c(namesPar,paste("tauw",c(1:nw),sep=""))}
-	fit0=fit.optim(par=c(0.5,0.5,rep(0.5,nw)),fn=neg2Log,namesPar=namesPar,logVar=T,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tU1W=tU1W,tXW=tXW,tWW=tWW,tWy=tWy,d1=d1,n=n,kw=kw,tauRel=tauRel)
-	out=list(fit0=fit0)
-
-
-##SKAT test or LR test
-
-
-if(SKAT==T| Score==T){
-var_e=fit0$par[1]
-taud=fit0$par[2]	
-if(nw>0)tauw=fit0$par[-c(1:2)]
-getQ=SKAT
-getS=Score
-Qdis=getDL(var_e,taud=taud,tauw=tauw,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,d1=d1,n=n,kw=kw,tU1W=tU1W,tXW=tXW,tWW=tWW,tWy=tWy,getQ=getQ,getS=getS,tZtZt=tZtZt,tU1Zt=tU1Zt,tXZt=tXZt,tyZt=tyZt,tWZt=tWZt)	
-
-if(SKAT==T){
-Q=Qdis$Q
-lambda=Qdis$lambda
-
-lambda1=lambda
-IDX1<-which(lambda >= 0)
-#eigenvalue bigger than mean(lambda1[IDX1])/100000 
-IDX2<-which(lambda1 > mean(lambda1[IDX1])/100000)
-lambda<-lambda1[IDX2]
-p.value<-Get_PValue.Lambda(lambda,Q) 
-out$p.SKAT=p.value
-out$Q=Q
-}
-#Score test
-if(Score==T){
-S=Qdis$S
-sdS=Qdis$sdS	
-out$Score=S
-out$sdScore=sdS
-out$p.Score=pnorm(S/sdS,lower.tail=F)
-	}
-	
-	}
-	#LR test only
-	if(LR==T){	
-		if(is.null(W)){
-			tWZt=NULL
-			kw_H1=ncol(Zt)
-			tXW_H1=tXZt
-			tU1W_H1=tU1Zt
-			tWW_H1=tZtZt
-			tWy_H1=tZty
-			}else{
-		tWZt=crossrod(W,Zt)
-		kw_H1=c(kw,ncol(Zt))
-		tXW_H1=cbind(tXW,tXZt)
-		tU1W_H1=cbind(tU1W,tU1Zt)
-		tWW_H1=rbind(cbind(tWW,tWZt),cbind(t(tWZt),tZtZt))
-		tWy_H1=rbind(tWy,tZty)
-			}		
-		namesPar_H1=c(namesPar,"taut")
-		fit1<-fit.optim(par=c(0.5,0.5,rep(0.5,nw),0.5),fn=neg2Log,namesPar=namesPar_H1,logVar=T,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tU1W=tU1W_H1,tXW=tXW_H1,tWW=tWW_H1,tWy=tWy_H1,d1=d1,n=n,kw=kw_H1,tauRel=tauRel)
-		neg2_log0=fit0$value
-		neg2_log1=fit1$value
-		LR=neg2_log0-neg2_log1
-		out$fit1=out$fit1
-		out$LR=LR
-		out$p.LR=pchisq(LR,1,lower.tail=F)/2
-	   
-	    if(nperm>0){
-	   LR.perm=vector()
-	   taut.perm=vector()
-	 for(j in 1:nperm){
-		Ztp=Zt[sample(1:nrow(Zt)),]
-		tZtZtp=crossprod(Ztp)
-		tZtyp=crossprod(Ztp,y)
-		tyZtp=t(tyZtp)
-		tU1Ztp=crossprod(U1,Ztp)
-		tXZtp=crossprod(X,Ztp)
-		if(is.null(W)){
-			tWZtp=NULL
-			kw_H1p=ncol(Ztp)
-			tXW_H1p=tXZtp
-			tU1W_H1=tU1Ztp
-			tWW_H1p=tZtZtp
-			tWy_H1p=tZtyp
-			}else{
-		tWZtp=crossprod(W,Ztp)
-		kw_H1p=c(kw,ncol(Ztp))
-		tXW_H1p=cbind(tXW,tXZtp)
-		tU1W_H1p=cbind(tU1W,tU1Ztp)
-		tWW_H1p=rbind(cbind(tWW,tWZtp),cbind(t(tWZt),tZtZtp))
-		tWy_H1p=rbind(tWy,tZtyp)
-			}
-		
-	###if logVar=F, sometimes, solve(tXVinvX) will be no solutions.
-						#fit0=fit.optim(par=c(0.5,0.01),fn=neg2Log.DL,namesPar=c("var_e","tau1"),logVar=F,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,d1=d1,n=n,k=k1)
-
-fit1<-fit.optim(par=c(0.5,0.5,rep(0.5,nw),0.5),fn=neg2Log,namesPar=c("var_e","taud",paste("tauw",c(1:nw),sep=""),"taut"),logVar=T,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tU1W=tU1W_H1p,tXW=tXW_H1p,tWW=tWW_H1p,tWy=tWy_H1p,d1=d1,n=n,kw=kw_H1,tauRel=tauRel)
-		varfit1.0=fit1$par
-		npar=length(par)
-		varfit1.0[npar]=0
-#if the log likelihood at 0 is larger than at the specified value, will put taut=0 
-neg2_log1.0=neg2Log(Var=varfit1.0,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tU1W=tU1W_H1p,tXW=tXW_H1p,tWW=tWW_H1p,tWy=tWy_H1p,d1=d1,n=n,kw=kw_H1,tauRel=tauRel,logVar=F)
-	if(neg2_log1.0<fit1$value){tau2.permj=0}else{tau2.permj=fit1$par[npar]}	
-		neg2_log0=fit0$value
-		neg2_log1=fit1$value
-		
-		LR=neg2_log0-neg2_log1
-		
-		LR.perm=c(LR.perm,LR)
-		tau2.perm=c(tau2.perm,tau2.permj)
-			}
-	out$LR.perm=LR.perm
-	out$tau2.perm=tau2.perm		
-		}
-	}
-return(out)
-
+  if(!is.null(W)){
+    if(is.null(kw))stop("kw must be speficied for W")
+    nw=length(kw)
+    tauw=rep(0,nw)
+    tU1W=crossprod(U1,W)
+    tXW=crossprod(X,W)
+    tWW=crossprod(W,W)
+    tWy=crossprod(W,y)
+    tWZt=crossprod(W,Zt)
+  }else {
+    nw=0
+    tauw=NULL
+    tU1W=NULL
+    tXW=NULL
+    tWW=NULL
+    tWy=NULL
+    tWZt=NULL
+  }
+  
+  tU1Zt=crossprod(U1,Zt)
+  tZty=crossprod(Zt,y)
+  tyZt=t(tZty)
+  tXZt=crossprod(X,Zt)
+  tZtZt=crossprod(Zt,Zt)
+  ##test with low rank Zh	
+  n=length(y)
+  nd=length(d1)
+  namesPar=c("var_e","taud")
+  if(nw>0){namesPar=c(namesPar,paste("tauw",c(1:nw),sep=""))}
+  fit0=fit.optim(par=c(0.5,0.5,rep(0.5,nw)),fn=neg2Log,namesPar=namesPar,logVar=T,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tU1W=tU1W,tXW=tXW,tWW=tWW,tWy=tWy,d1=d1,n=n,kw=kw,tauRel=tauRel)
+  out=list(fit0=fit0)
+  
+  
+  ##SKAT test or LR test
+  
+  
+  if(SKAT==T| Score==T){
+    var_e=fit0$par[1]
+    taud=fit0$par[2]	
+    if(nw>0)tauw=fit0$par[-c(1:2)]
+    getQ=SKAT
+    getS=Score
+    Qdis=getDL(var_e,taud=taud,tauw=tauw,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,d1=d1,n=n,kw=kw,tU1W=tU1W,tXW=tXW,tWW=tWW,tWy=tWy,getQ=getQ,getS=getS,tZtZt=tZtZt,tU1Zt=tU1Zt,tXZt=tXZt,tyZt=tyZt,tWZt=tWZt)	
+    
+    if(SKAT==T){
+      Q=Qdis$Q
+      lambda=Qdis$lambda
+      
+      lambda1=lambda
+      IDX1<-which(lambda >= 0)
+      #eigenvalue bigger than mean(lambda1[IDX1])/100000 
+      IDX2<-which(lambda1 > mean(lambda1[IDX1])/100000)
+      lambda<-lambda1[IDX2]
+      p.value<-Get_PValue.Lambda(lambda,Q) 
+      out$p.SKAT=p.value
+      out$Q=Q
+    }
+    #Score test
+    if(Score==T){
+      S=Qdis$S
+      sdS=Qdis$sdS	
+      out$Score=S
+      out$sdScore=sdS
+      out$p.Score=pnorm(S/sdS,lower.tail=F)
+    }
+    
+  }
+  #LR test only
+  if(LR==T){	
+    if(is.null(W)){
+      tWZt=NULL
+      kw_H1=ncol(Zt)
+      tXW_H1=tXZt
+      tU1W_H1=tU1Zt
+      tWW_H1=tZtZt
+      tWy_H1=tZty
+    }else{
+      tWZt=crossrod(W,Zt)
+      kw_H1=c(kw,ncol(Zt))
+      tXW_H1=cbind(tXW,tXZt)
+      tU1W_H1=cbind(tU1W,tU1Zt)
+      tWW_H1=rbind(cbind(tWW,tWZt),cbind(t(tWZt),tZtZt))
+      tWy_H1=rbind(tWy,tZty)
+    }		
+    namesPar_H1=c(namesPar,"taut")
+    fit1<-fit.optim(par=c(0.5,0.5,rep(0.5,nw),0.5),fn=neg2Log,namesPar=namesPar_H1,logVar=T,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tU1W=tU1W_H1,tXW=tXW_H1,tWW=tWW_H1,tWy=tWy_H1,d1=d1,n=n,kw=kw_H1,tauRel=tauRel)
+    neg2_log0=fit0$value
+    neg2_log1=fit1$value
+    LR=neg2_log0-neg2_log1
+    out$fit1=out$fit1
+    out$LR=LR
+    out$p.LR=pchisq(LR,1,lower.tail=F)/2
+    
+    if(nperm>0){
+      LR.perm=vector()
+      taut.perm=vector()
+      for(j in 1:nperm){
+        Ztp=Zt[sample(1:nrow(Zt)),]
+        tZtZtp=crossprod(Ztp)
+        tZtyp=crossprod(Ztp,y)
+        tyZtp=t(tyZtp)
+        tU1Ztp=crossprod(U1,Ztp)
+        tXZtp=crossprod(X,Ztp)
+        if(is.null(W)){
+          tWZtp=NULL
+          kw_H1p=ncol(Ztp)
+          tXW_H1p=tXZtp
+          tU1W_H1=tU1Ztp
+          tWW_H1p=tZtZtp
+          tWy_H1p=tZtyp
+        }else{
+          tWZtp=crossprod(W,Ztp)
+          kw_H1p=c(kw,ncol(Ztp))
+          tXW_H1p=cbind(tXW,tXZtp)
+          tU1W_H1p=cbind(tU1W,tU1Ztp)
+          tWW_H1p=rbind(cbind(tWW,tWZtp),cbind(t(tWZt),tZtZtp))
+          tWy_H1p=rbind(tWy,tZtyp)
+        }
+        
+        ###if logVar=F, sometimes, solve(tXVinvX) will be no solutions.
+        #fit0=fit.optim(par=c(0.5,0.01),fn=neg2Log.DL,namesPar=c("var_e","tau1"),logVar=F,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,d1=d1,n=n,k=k1)
+        
+        fit1<-fit.optim(par=c(0.5,0.5,rep(0.5,nw),0.5),fn=neg2Log,namesPar=c("var_e","taud",paste("tauw",c(1:nw),sep=""),"taut"),logVar=T,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tU1W=tU1W_H1p,tXW=tXW_H1p,tWW=tWW_H1p,tWy=tWy_H1p,d1=d1,n=n,kw=kw_H1,tauRel=tauRel)
+        varfit1.0=fit1$par
+        npar=length(par)
+        varfit1.0[npar]=0
+        #if the log likelihood at 0 is larger than at the specified value, will put taut=0 
+        neg2_log1.0=neg2Log(Var=varfit1.0,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tU1W=tU1W_H1p,tXW=tXW_H1p,tWW=tWW_H1p,tWy=tWy_H1p,d1=d1,n=n,kw=kw_H1,tauRel=tauRel,logVar=F)
+        if(neg2_log1.0<fit1$value){tau2.permj=0}else{tau2.permj=fit1$par[npar]}	
+        neg2_log0=fit0$value
+        neg2_log1=fit1$value
+        
+        LR=neg2_log0-neg2_log1
+        
+        LR.perm=c(LR.perm,LR)
+        tau2.perm=c(tau2.perm,tau2.permj)
+      }
+      out$LR.perm=LR.perm
+      out$tau2.perm=tau2.perm		
+    }
+  }
+  return(out)
+  
 }
 
 
 
 
 pLR.Listgarten=function(LR.perm,tau2.perm,LR,topP=0.1){
-	#using the 0.1 tail is indeed better. This gives all the weight of fitting to the top 10 percent
-	n=length(LR.perm)
-	ntopP=round(n*topP)
-	pi=mean(tau2.perm==0)
-	n0=ceiling(pi*n)
-	ntop=min(ntopP,n-n0)
-	
-	topLR=sort(LR.perm,decreasing=T)[1:ntop]
-	topID=n:(n-ntop+1)
-	logp.expect=log(pi+(1-pi)*(topID-0.5-n0)/(n-n0)) #quantile of the non-0 values
-		
-	get_ad=function(ad=c(a,d),decreasingLR.perm,logp.expect){
-	a=ad[1]
-	d=ad[2]
-	
-	logp.observe=log(pi+(1-pi)*pchisq(decreasingLR.perm/a,df=d,lower.tail=T))
-	return(mean((logp.expect-logp.observe)^2))
-	}
-	fit=optim(par=c(1,1),fn=get_ad,decreasingLR.perm=topLR,logp.expect=logp.expect)
-	a=fit$par[1]
-	d=fit$par[2]
-	p.LR=pchisq(LR/a,df=d,lower.tail=F)*(1-pi)
-	return(list(p.LR=p.LR,a=a,d=d,p=pi))
+  #using the 0.1 tail is indeed better. This gives all the weight of fitting to the top 10 percent
+  n=length(LR.perm)
+  ntopP=round(n*topP)
+  pi=mean(tau2.perm==0)
+  n0=ceiling(pi*n)
+  ntop=min(ntopP,n-n0)
+  
+  topLR=sort(LR.perm,decreasing=T)[1:ntop]
+  topID=n:(n-ntop+1)
+  logp.expect=log(pi+(1-pi)*(topID-0.5-n0)/(n-n0)) #quantile of the non-0 values
+  
+  get_ad=function(ad=c(a,d),decreasingLR.perm,logp.expect){
+    a=ad[1]
+    d=ad[2]
+    
+    logp.observe=log(pi+(1-pi)*pchisq(decreasingLR.perm/a,df=d,lower.tail=T))
+    return(mean((logp.expect-logp.observe)^2))
+  }
+  fit=optim(par=c(1,1),fn=get_ad,decreasingLR.perm=topLR,logp.expect=logp.expect)
+  a=fit$par[1]
+  d=fit$par[2]
+  p.LR=pchisq(LR/a,df=d,lower.tail=F)*(1-pi)
+  return(list(p.LR=p.LR,a=a,d=d,p=pi))
 }
 
 pLR.Greven=function(LR.perm,LR){
-	#this does not work well, because, sometimes, E(t2) might be way larger than E(t)
-	Et=mean(LR.perm)
-	Et2=mean(LR.perm^2)
-	
-	p=1-3*Et^2/Et2
-	a=Et2/(3*Et)
-	
-	return(list(p.LR=pchisq(LR/a,df=1,lower.tail=F)*(1-p),a=a,p=p))
+  #this does not work well, because, sometimes, E(t2) might be way larger than E(t)
+  Et=mean(LR.perm)
+  Et2=mean(LR.perm^2)
+  p=1-3*Et^2/Et2
+  a=Et2/(3*Et)
+  return(list(p.LR=pchisq(LR/a,df=1,lower.tail=F)*(1-p),a=a,p=p))
 }
