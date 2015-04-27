@@ -386,4 +386,3 @@ pLR.Greven=function(LR.perm,LR){#this does not work well, because, sometimes, E(
   out=list(p.LR=p.LR,a=a,p=p)
   return(out)
   }
-  
