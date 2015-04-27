@@ -351,28 +351,3 @@ testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,SKAT=T,Score=F,LR=F,npe
 
 
 
-pLR.Listgarten=function(LR.perm,tau2.perm,LR,topP=0.1){
-  #using the 0.1 tail is indeed better. This gives all the weight of fitting to the top 10 percent
-  n=length(LR.perm)
-  ntopP=round(n*topP)
-  pi=mean(tau2.perm==0)
-  n0=ceiling(pi*n)
-  ntop=min(ntopP,n-n0)
-  
-  topLR=sort(LR.perm,decreasing=T)[1:ntop]
-  topID=n:(n-ntop+1)
-  logp.expect=log(pi+(1-pi)*(topID-0.5-n0)/(n-n0)) #quantile of the non-0 values
-  
-  get_ad=function(ad=c(a,d),decreasingLR.perm,logp.expect){
-    a=ad[1]
-    d=ad[2]
-    
-    logp.observe=log(pi+(1-pi)*pchisq(decreasingLR.perm/a,df=d,lower.tail=T))
-    return(mean((logp.expect-logp.observe)^2))
-  }
-  fit=optim(par=c(1,1),fn=get_ad,decreasingLR.perm=topLR,logp.expect=logp.expect)
-  a=fit$par[1]
-  d=fit$par[2]
-  p.LR=pchisq(LR/a,df=d,lower.tail=F)*(1-pi)
-  return(list(p.LR=p.LR,a=a,d=d,p=pi))
-}
