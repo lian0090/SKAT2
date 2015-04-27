@@ -323,20 +323,16 @@ testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,SKAT=T,Score=F,LR=F,npe
         }
         
         ###if logVar=F, sometimes, solve(tXVinvX) will be no solutions.
-        #fit0=fit.optim(par=c(0.5,0.01),fn=neg2Log.DL,namesPar=c("var_e","tau1"),logVar=F,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,d1=d1,n=n,k=k1)
-        
+#fit0=fit.optim(par=c(0.5,0.01),fn=neg2Log.DL,namesPar=c("var_e","tau1"),logVar=F,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,d1=d1,n=n,k=k1)
         fit1<-fit.optim(par=c(0.5,0.5,rep(0.5,nw),0.5),fn=neg2Log,namesPar=c("var_e","taud",paste("tauw",c(1:nw),sep=""),"taut"),logVar=T,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tU1W=tU1W_H1p,tXW=tXW_H1p,tWW=tWW_H1p,tWy=tWy_H1p,d1=d1,n=n,kw=kw_H1,tauRel=tauRel)
         varfit1.0=fit1$par
         npar=length(par)
         varfit1.0[npar]=0
-        #if the log likelihood at 0 is larger than at the specified value, will put taut=0 
-        neg2_log1.0=neg2Log(Var=varfit1.0,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tU1W=tU1W_H1p,tXW=tXW_H1p,tWW=tWW_H1p,tWy=tWy_H1p,d1=d1,n=n,kw=kw_H1,tauRel=tauRel,logVar=F)
+        #if the log likelihood at 0 is larger than at the specified value, will put taut=0        neg2_log1.0=neg2Log(Var=varfit1.0,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tU1W=tU1W_H1p,tXW=tXW_H1p,tWW=tWW_H1p,tWy=tWy_H1p,d1=d1,n=n,kw=kw_H1,tauRel=tauRel,logVar=F)
         if(neg2_log1.0<fit1$value){tau2.permj=0}else{tau2.permj=fit1$par[npar]}	
         neg2_log0=fit0$value
         neg2_log1=fit1$value
-        
-        LR=neg2_log0-neg2_log1
-        
+        LR=neg2_log0-neg2_log1      
         LR.perm=c(LR.perm,LR)
         tau2.perm=c(tau2.perm,tau2.permj)
       }
@@ -344,10 +340,5 @@ testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,SKAT=T,Score=F,LR=F,npe
       out$tau2.perm=tau2.perm		
     }
   }
-  return(out)
-  
+  return(out)  
 }
-
-
-
-
