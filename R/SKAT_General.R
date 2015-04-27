@@ -384,4 +384,4 @@ pLR.Greven=function(LR.perm,LR){
   p=1-3*Et^2/Et2
   a=Et2/(3*Et)
   return(list(p.LR=pchisq(LR/a,df=1,lower.tail=F)*(1-p),a=a,p=p))
-}
+  }
