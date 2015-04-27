@@ -14,4 +14,9 @@ colmult=function(Z1,Z2){
 	}
 	return(Z3)
 	}	
-	
+
+#calculate matrix trace
+tr=function(X){
+	out=sum(diag(X))
+	return(out)
+}	
