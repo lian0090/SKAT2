@@ -377,12 +377,13 @@ pLR.Listgarten=function(LR.perm,tau2.perm,LR,topP=0.1){
   return(list(p.LR=p.LR,a=a,d=d,p=pi))
 }
 
-pLR.Greven=function(LR.perm,LR){
-  #this does not work well, because, sometimes, E(t2) might be way larger than E(t)
+pLR.Greven=function(LR.perm,LR){#this does not work well, because, sometimes, E(t2) might be way larger than E(t)
   Et=mean(LR.perm)
   Et2=mean(LR.perm^2)
   p=1-3*Et^2/Et2
   a=Et2/(3*Et)
-  out=list(p.LR=pchisq(LR/a,df=1,lower.tail=F)*(1-p),a=a,p=p)
+  p.LR=pchisq(LR/a,df=1,lower.tail=F)*(1-p)
+  out=list(p.LR=p.LR,a=a,p=p)
   return(out)
   }
+  
