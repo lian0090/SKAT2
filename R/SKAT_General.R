@@ -1,5 +1,3 @@
-#try LR test
-#get U1 D1
 fit.optim=function(par,fn,namesPar,logVar=T,...){
   fit<-optim(par=par,fn=fn,logVar=logVar,...)
   if(logVar==T){fit$par=exp(fit$par)}
@@ -7,6 +5,7 @@ fit.optim=function(par,fn,namesPar,logVar=T,...){
   fit$loglik=-1/2*fit$value
   return(fit)
 }
+
 getDL=function(var_e,taud,d1,n,tU1y,tU1X,tXX=NULL,tXy=NULL,tyy=NULL,tauw=NULL,kw=NULL,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=NULL,getQ=F,getS=F,tZtZt=NULL,tU1Zt=NULL,tXZt=NULL,tyZt=NULL,tWZt=NULL){
   out=list()
   kd=length(d1)
@@ -109,6 +108,8 @@ getDL=function(var_e,taud,d1,n,tU1y,tU1X,tXX=NULL,tXy=NULL,tyy=NULL,tauw=NULL,kw
   
   return(out)
 }
+
+
 neg2Log=function(Var,tU1y,tU1X,tXX,tXy,tyy,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=NULL,d1,n,kw=NULL,logVar=T,tauRel=NULL){
   #d1 and U1 from d1=svd(Zd)$d^2, U1=svd(Zd)$u 
   if(logVar==T){
@@ -161,6 +162,7 @@ neg2Log=function(Var,tU1y,tU1X,tXX,tXy,tyy,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=NULL,
   return(out)
 }
 
+
 getEigenZd=function(y,X,Kd=NULL,Zd=NULL,tXX=NULL,tXy=NULL,tyy=NULL){
   out=list()
   if(!is.null(Kd) & !is.null(Zd)) stop("Only use one of Kd or Zd")
@@ -194,6 +196,7 @@ getEigenZd=function(y,X,Kd=NULL,Zd=NULL,tXX=NULL,tXy=NULL,tyy=NULL){
   out$tyy=tyy
   return(out)
 }
+
 
 testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,SKAT=T,Score=F,LR=F,nperm=0){
   d1=eigenZd$d1
@@ -342,3 +345,42 @@ testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,SKAT=T,Score=F,LR=F,npe
   }
   return(out)  
 }
+
+pLR.Listgarten=function(LR.perm,tau2.perm,LR,topP=0.1){
+  #using the 0.1 tail is indeed better. This gives all the weight of fitting to the top 10 percent
+  n=length(LR.perm)
+  ntopP=round(n*topP)
+  pi=mean(tau2.perm==0)
+  n0=ceiling(pi*n)
+  ntop=min(ntopP,n-n0)
+  
+  topLR=sort(LR.perm,decreasing=T)[1:ntop]
+  topID=n:(n-ntop+1)
+  logp.expect=log(pi+(1-pi)*(topID-0.5-n0)/(n-n0)) #quantile of the non-0 values
+  
+  get_ad=function(ad=c(a,d),decreasingLR.perm,logp.expect){
+    a=ad[1]
+    d=ad[2]
+    
+    logp.observe=log(pi+(1-pi)*pchisq(decreasingLR.perm/a,df=d,lower.tail=T))
+    return(mean((logp.expect-logp.observe)^2))
+  }
+  fit=optim(par=c(1,1),fn=get_ad,decreasingLR.perm=topLR,logp.expect=logp.expect)
+  a=fit$par[1]
+  d=fit$par[2]
+  p.LR=pchisq(LR/a,df=d,lower.tail=F)*(1-pi)
+  return(list(p.LR=p.LR,a=a,d=d,p=pi))
+}
+
+
+
+pLR.Greven=function(LR.perm,LR){
+	#this does not work well, because, sometimes, E(t2) might be way larger than E(t)
+  Et=mean(LR.perm)
+  Et2=mean(LR.perm^2)
+  p=1-3*Et^2/Et2
+  a=Et2/(3*Et)
+  p.LR=pchisq(LR/a,df=1,lower.tail=F)*(1-p)
+  out=list(p.LR=p.LR,a=a,p=p)
+  return(out)
+  }

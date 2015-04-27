@@ -1,6 +1,9 @@
 ##functions
 #Impute marker genotypes by column mean
-meanImpute=function(X){apply(X,2,function(a){if(any(is.na(a))){a[which(ia.na(a))]=mean(a)};return(a)})
+meanImpute=function(X){
+	X=apply(X,2,function(a){if(any(is.na(a))){a[which(is.na(a))]=mean(a,na.rm=T)};return(a)})
+	return(X)
+	}
 	
 #Get columwise multiplication 
 colmult=function(Z1,Z2){

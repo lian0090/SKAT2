@@ -1,8 +1,8 @@
-useDynLib(SKAT, .registration = TRUE)
+useDynLib(SKAT2, .registration = TRUE)
 
 
 
 # functions
-export(Get_PValue.Lambda)
+export(Get_PValue.Lambda,colmult,meanImpute,tr,fit.optim,getDL,neg2Log,getEigenZd,testZ)
 
 
