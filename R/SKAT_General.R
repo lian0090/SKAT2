@@ -38,7 +38,7 @@ getDL=function(var_e,taud,d1,n,tU1y,tU1X,tXX=NULL,tXy=NULL,tyy=NULL,tauw=NULL,kw
       tWVdy=tWU1d_sharp%*%tU1y
     }
     #Gamma=rep(tau,k) both k and tau are vectors
-    Gamma=rep(tauw,kw)
+    Gamma=rep(tauw,kw) ##kw is needed for constructing Gamma
     Gamma_tWVdW=sweep(tWVdW,2,Gamma,"*")
     Vgamma=Gamma_tWVdW
     diag(Vgamma)=diag(Vgamma+1)
@@ -122,7 +122,7 @@ neg2Log=function(Var,tU1y,tU1X,tXX,tXy,tyy,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=NULL,
     #relationship between taud and tauw
     if(!is.character(tauRel))stop("tauRel must be characters")
     if(!grepl("tauw",tauRel) & !grepl("taud",tauRel))stop("either tauw or taud should be 	specified")
-    eval(parse(tauRel))    	
+    eval(parse(text=tauRel))    	
   }
   
   kd=length(d1)
@@ -206,6 +206,7 @@ testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,SKAT=T,Score=F,LR=F,npe
   if(!is.null(W)){
     if(is.null(kw))stop("kw must be speficied for W")
     nw=length(kw)
+    if(sum(kw)!=ncol(W))stop("sum of kw should be equal to the number of columns in W")
     tauw=rep(0,nw)
     tU1W=crossprod(U1,W)
     tXW=crossprod(X,W)
