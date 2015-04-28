@@ -23,3 +23,13 @@ tr=function(X){
 	out=sum(diag(X))
 	return(out)
 }	
+
+#simulate beta for random effects
+simuBeta=function(Z,k,var_e=1){
+	Z=meanImpute(Z)
+	Z=scale(Z,T,F)
+    sumvar=sum(apply(Z,2,var))
+    beta=rnorm(ncol(Z),0,sqrt(k*var_e/sumvar))
+    u=Z%*%beta
+    return(list(Z=Z,beta=beta,u=u))
+}

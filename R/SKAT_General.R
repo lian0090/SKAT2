@@ -163,16 +163,13 @@ neg2Log=function(Var,tU1y,tU1X,tXX,tXy,tyy,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=NULL,
 }
 
 
-getEigenZd=function(y,X,Kd=NULL,Zd=NULL,tXX=NULL,tXy=NULL,tyy=NULL){
+getEigenZd=function(Kd=NULL,Zd=NULL,y=NULL,X=NULL){
   out=list()
   if(!is.null(Kd) & !is.null(Zd)) stop("Only use one of Kd or Zd")
   if(!is.null(Zd)&nrow(Zd)<=ncol(Zd)){
     stop("Zd has full column rank, please specify Kd instead of Zd" )
   }	
   if(!is.null(Zd)){	
-    if(is.null(tXX)){tXX=crossprod(X)}else if(nrow(tXX)!=ncol(tXX)) stop("tXX must be square matrix!")
-    if(is.null(tXy)){tXy=crossprod(X,y)}
-    if(is.null(tyy)){tyy=sum(y^2)}
     #NULL model
     svdZd=svd(Zd,nv=0)
     U1=svdZd$u
@@ -181,31 +178,31 @@ getEigenZd=function(y,X,Kd=NULL,Zd=NULL,tXX=NULL,tXy=NULL,tyy=NULL){
     eigenKd=eigen(Kd,symmetric=T)
     U1=eigenKd$vectors
     d1=eigenKd$values	
-    tXX=NULL
-    tXy=NULL
-    tyy=NULL
   }
-  tU1X=crossprod(U1,X)
-  tU1y=crossprod(U1,y)
+  
   out$U1=U1
   out$d1=d1
-  out$tU1X=tU1X
-  out$tU1y=tU1y
-  out$tXX=tXX
-  out$tXy=tXy
-  out$tyy=tyy
+  if(!is.null(y)) out$tU1y=crossprod(U1,y)else{out$tU1y=NULL}
+  if(!is.null(X)) out$tU1X=crossprod(U1,X)else{out$tU1X=NULL}
   return(out)
 }
 
-
-testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,SKAT=T,Score=F,LR=F,nperm=0){
+testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,SKAT=T,Score=F,LR=F,nperm=0,tXX=NULL,tXy=NULL,tyy=NULL){
   d1=eigenZd$d1
   U1=eigenZd$U1
   tU1X=eigenZd$tU1X
   tU1y=eigenZd$tU1y
-  tXy=eigenZd$tXy
-  tXX=eigenZd$tXX
-  tyy=eigenZd$tyy
+  
+  n=length(y)
+  nd=length(d1)
+  
+  
+  if(nd<n){
+  if(is.null(tXy)) tXy=crossprod(X,y)
+  if(is.null(tXX)) tXX=crossprod(X)
+  if(is.null(tyy)) tyy=sum(y^2)
+  }
+  
   if(!is.null(W)){
     if(is.null(kw))stop("kw must be speficied for W")
     nw=length(kw)
@@ -231,8 +228,7 @@ testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,SKAT=T,Score=F,LR=F,npe
   tXZt=crossprod(X,Zt)
   tZtZt=crossprod(Zt,Zt)
   ##test with low rank Zh	
-  n=length(y)
-  nd=length(d1)
+ 
   namesPar=c("var_e","taud")
   if(nw>0){namesPar=c(namesPar,paste("tauw",c(1:nw),sep=""))}
   fit0=fit.optim(par=c(0.5,0.5,rep(0.5,nw)),fn=neg2Log,namesPar=namesPar,logVar=T,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tU1W=tU1W,tXW=tXW,tWW=tWW,tWy=tWy,d1=d1,n=n,kw=kw,tauRel=tauRel)
