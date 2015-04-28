@@ -166,8 +166,8 @@ neg2Log=function(Var,tU1y,tU1X,tXX,tXy,tyy,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=NULL,
 getEigenZd=function(Kd=NULL,Zd=NULL){
   out=list()
   if(!is.null(Kd) & !is.null(Zd)) stop("Only use one of Kd or Zd")
-  if(!is.null(Zd)&nrow(Zd)<=ncol(Zd)){
-    stop("Zd has full column rank, please specify Kd instead of Zd" )
+  if(!is.null(Zd)){
+  	if(nrow(Zd)<=ncol(Zd)) stop("Zd has full column rank, please specify Kd instead of Zd" )
   }	
   if(!is.null(Zd)){	
     #NULL model
