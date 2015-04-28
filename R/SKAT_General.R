@@ -163,7 +163,7 @@ neg2Log=function(Var,tU1y,tU1X,tXX,tXy,tyy,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=NULL,
 }
 
 
-getEigenZd=function(Kd=NULL,Zd=NULL,y=NULL,X=NULL){
+getEigenZd=function(Kd=NULL,Zd=NULL){
   out=list()
   if(!is.null(Kd) & !is.null(Zd)) stop("Only use one of Kd or Zd")
   if(!is.null(Zd)&nrow(Zd)<=ncol(Zd)){
@@ -182,16 +182,16 @@ getEigenZd=function(Kd=NULL,Zd=NULL,y=NULL,X=NULL){
   
   out$U1=U1
   out$d1=d1
-  if(!is.null(y)) out$tU1y=crossprod(U1,y)else{out$tU1y=NULL}
-  if(!is.null(X)) out$tU1X=crossprod(U1,X)else{out$tU1X=NULL}
+ 
   return(out)
 }
 
-testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,SKAT=T,Score=F,LR=F,nperm=0,tXX=NULL,tXy=NULL,tyy=NULL){
+testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,SKAT=T,Score=F,LR=F,nperm=0,tU1X=NULL,tU1y=NULL,tXX=NULL,tXy=NULL,tyy=NULL){
   d1=eigenZd$d1
   U1=eigenZd$U1
-  tU1X=eigenZd$tU1X
-  tU1y=eigenZd$tU1y
+  
+  if(is.null(tU1X)) tU1X=crossprod(U1,X)
+  if(is.null(tU1y)) tU1y=crossprod(U1,y)
   
   n=length(y)
   nd=length(d1)
