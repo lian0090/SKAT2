@@ -1,10 +1,61 @@
-fit.optim=function(par,fn,namesPar,logVar=T,...){
-  fit<-optim(par=par,fn=fn,logVar=logVar,...)
-  if(logVar==T){fit$par=exp(fit$par)}
+fit.optim=function(par,fn,namesPar,logVar=T,tauRel,...){
+  fit<-optim(par=par,fn=fn,logVar=logVar,tauRel=tauRel,...)
   names(fit$par)=namesPar
+  Var=fit$par
+  Var=get_tau(Var,logVar,tauRel)
+  for(i in 1:length(Var)){
+  	#var_e,taud,tauw
+  	assign(names(Var)[i],Var[[i]])
+  } 
+  fit$outVar=Var
   fit$loglik=-1/2*fit$value
   return(fit)
 }
+
+ get_tau=function(Var,logVar,tauRel){
+    
+    if(logVar==T){
+    Var=exp(Var)
+  }
+	
+  for(i in 1:length(Var)){
+  	assign(names(Var)[i],Var[i])
+  }
+  namesPar=names(Var)
+  if(any(!gsub("\\d*","",namesPar) %in% c("var_e","taud","tauw"))){
+  	stop("Var names must be var_e, taud, or tauwD")
+  }
+ 
+  	if(is.null(tauRel)){
+  	names.tauw=grep("tauw",namesPar)
+  	if(length(names.tauw)>0){
+  	for(i in 1:length(names.tauw)){
+  		tauw=c(tauw,get(names.tauw[i]))
+  	}
+  	}else {names.tauw=NULL}
+  	} else{
+   	split.tau=strsplit(tauRel,split="=")
+    #relationship between taud and tauw
+    for(i in 1:length(split.tau)){
+    	split.taui=split.tau[[i]]
+    	n.taui=lenth(split.taui)
+    	for(j in 1:(n.taui-1)){
+    		assign(split.taui[j],get(split.taui[n.taui]))
+    	}
+    } 	
+  names.tauw=unique(grep("tauw",c(unlist(split.tau),namesPar),value=T))
+  }
+  if(!is.null(names.tauw)){	
+  index.tauw=as.numeric(gsub("tauw(\\d+)","\\1",names.tau))
+  names.tauw=names.tauw(order(index.tauw))
+  tauw=vector()
+  for(i in 1:length(names.tauw)){
+  	tauw[i]=get(names.tauw[i])
+  }
+  names(tauw)=names(tauw)
+  }
+  return(Var=list(var_e=var_e,taud=taud,tauw=tauw))
+  }
 
 getDL=function(var_e,taud,d1,n,tU1y,tU1X,tXX=NULL,tXy=NULL,tyy=NULL,tauw=NULL,kw=NULL,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=NULL,getQ=F,getS=F,tZtZt=NULL,tU1Zt=NULL,tXZt=NULL,tyZt=NULL,tWZt=NULL){
   out=list()
@@ -110,21 +161,16 @@ getDL=function(var_e,taud,d1,n,tU1y,tU1X,tXX=NULL,tXy=NULL,tyy=NULL,tauw=NULL,kw
 }
 
 
+
+
 neg2Log=function(Var,tU1y,tU1X,tXX,tXy,tyy,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=NULL,d1,n,kw=NULL,logVar=T,tauRel=NULL){
   #d1 and U1 from d1=svd(Zd)$d^2, U1=svd(Zd)$u 
-  if(logVar==T){
-    Var=exp(Var)
-  }
-  var_e=Var[1]
-  taud=Var[2]
-  if(length(Var)<=2){tauw=NULL} else {tauw=Var[-c(1:2)]}
-  if(!is.null(tauRel)){
-    #relationship between taud and tauw
-    if(!is.character(tauRel))stop("tauRel must be characters")
-    if(!grepl("tauw",tauRel) & !grepl("taud",tauRel))stop("either tauw or taud should be 	specified")
-    eval(parse(text=tauRel))    	
-  }
   
+  Var=get_tau(Var,logVar,tauRel)
+  for(i in 1:length(Var)){
+  	assign(names(Var)[i],Var[[i]])
+  } 
+   
   kd=length(d1)
   terms=getDL(var_e=var_e,taud=taud,tauw=tauw,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tU1W=tU1W,tXW=tXW,tWW=tWW,tWy=tWy,d1=d1,n=n,kw=kw,getQ=F)
   tXVinvX=terms$tXVinvX
@@ -229,10 +275,27 @@ testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,SKAT=T,Score=F,LR=F,npe
   tXZt=crossprod(X,Zt)
   tZtZt=crossprod(Zt,Zt)
   ##test with low rank Zh	
- 
   namesPar=c("var_e","taud")
-  if(nw>0){namesPar=c(namesPar,paste("tauw",c(1:nw),sep=""))}
-  fit0=fit.optim(par=c(0.5,0.5,rep(0.5,nw)),fn=neg2Log,namesPar=namesPar,logVar=T,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tU1W=tU1W,tXW=tXW,tWW=tWW,tWy=tWy,d1=d1,n=n,kw=kw,tauRel=tauRel)
+  if(nw>0){
+  	namesPar=c("var_e","taud",paste("tauw",c(1:nw),sep=""))
+  	if(!is.null(tauRel)){
+  		splittau=strsplit(tauRel,split="=")
+  		unlist.splittau=unlist(splittau)
+  		if(any(duplicated(unlist.splittau))){stop("in tauRel,all equal terms must be in the same equation")}
+  		if(any(!(gsub("(\\d*)","",unlist.splittau)%in% c("taud","tauw")))){
+  			stop("in tauRel, must only specify taud or tauwD, where D is any integer less or equal to the number of W matrix")
+  			}
+  		for(i in 1:length(splittau)){
+  			splittau.i=splittau[[i]]
+  			n.split=length(splittau.i)
+  			##only keep the last tau from relationship equation
+  			namesPar=setdiff(namesPar,splittau.i[-n.split])
+  		}
+  		}
+  	}
+  par=rep(0.5,length(namesPar))
+  names(par)=namesPar	
+  fit0=fit.optim(par=par,fn=neg2Log,logVar=T,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tU1W=tU1W,tXW=tXW,tWW=tWW,tWy=tWy,d1=d1,n=n,kw=kw,tauRel=tauRel)
   out=list(fit0=fit0)
   
   
@@ -240,9 +303,9 @@ testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,SKAT=T,Score=F,LR=F,npe
   
   
   if(SKAT==T| Score==T){
-    var_e=fit0$par[1]
-    taud=fit0$par[2]	
-    if(nw>0)tauw=fit0$par[-c(1:2)]
+    var_e=fit0$outVar$var_e
+    taud=fit0$outVar$taud
+    if(nw>0)tauw=fit0$outVar$tauw
     getQ=SKAT
     getS=Score
     Qdis=getDL(var_e,taud=taud,tauw=tauw,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,d1=d1,n=n,kw=kw,tU1W=tU1W,tXW=tXW,tWW=tWW,tWy=tWy,getQ=getQ,getS=getS,tZtZt=tZtZt,tU1Zt=tU1Zt,tXZt=tXZt,tyZt=tyZt,tWZt=tWZt)	
@@ -287,8 +350,8 @@ testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,SKAT=T,Score=F,LR=F,npe
       tWW_H1=rbind(cbind(tWW,tWZt),cbind(t(tWZt),tZtZt))
       tWy_H1=rbind(tWy,tZty)
     }		
-    namesPar_H1=c(namesPar,"taut")
-    fit1<-fit.optim(par=c(0.5,0.5,rep(0.5,nw),0.5),fn=neg2Log,namesPar=namesPar_H1,logVar=T,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tU1W=tU1W_H1,tXW=tXW_H1,tWW=tWW_H1,tWy=tWy_H1,d1=d1,n=n,kw=kw_H1,tauRel=tauRel)
+    namesPar_H1=c(namesPar,paste("tau",nw+1,sep=""))
+    fit1<-fit.optim(par=rep(0.5,length(namesPar_H1)),fn=neg2Log,namesPar=namesPar_H1,logVar=T,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tU1W=tU1W_H1,tXW=tXW_H1,tWW=tWW_H1,tWy=tWy_H1,d1=d1,n=n,kw=kw_H1,tauRel=tauRel)
     neg2_log0=fit0$value
     neg2_log1=fit1$value
     LR=neg2_log0-neg2_log1
@@ -322,14 +385,14 @@ testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,SKAT=T,Score=F,LR=F,npe
           tWy_H1p=rbind(tWy,tZtyp)
         }
         
-        ###if logVar=F, sometimes, solve(tXVinvX) will be no solutions.
-#fit0=fit.optim(par=c(0.5,0.01),fn=neg2Log.DL,namesPar=c("var_e","tau1"),logVar=F,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,d1=d1,n=n,k=k1)
-        fit1<-fit.optim(par=c(0.5,0.5,rep(0.5,nw),0.5),fn=neg2Log,namesPar=c("var_e","taud",paste("tauw",c(1:nw),sep=""),"taut"),logVar=T,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tU1W=tU1W_H1p,tXW=tXW_H1p,tWW=tWW_H1p,tWy=tWy_H1p,d1=d1,n=n,kw=kw_H1,tauRel=tauRel)
-        varfit1.0=fit1$par
-        npar=length(par)
-        varfit1.0[npar]=0
-        #if the log likelihood at 0 is larger than at the specified value, will put taut=0        neg2_log1.0=neg2Log(Var=varfit1.0,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tU1W=tU1W_H1p,tXW=tXW_H1p,tWW=tWW_H1p,tWy=tWy_H1p,d1=d1,n=n,kw=kw_H1,tauRel=tauRel,logVar=F)
-        if(neg2_log1.0<fit1$value){tau2.permj=0}else{tau2.permj=fit1$par[npar]}	
+        fit1<-fit.optim(par=rep(0.5,length(namesPar)+1),fn=neg2Log,namesPar=c(namesPar,paste("tauw",nw+1,sep="")),logVar=T,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tU1W=tU1W_H1p,tXW=tXW_H1p,tWW=tWW_H1p,tWy=tWy_H1p,d1=d1,n=n,kw=kw_H1,tauRel=tauRel)
+      
+        #if the log likelihood at 0 is larger than at the specified value, will put taut=0  
+        newVar=fit$par
+        n.par=length(fit$par)
+        newVar[n.par]=0
+              neg2_log1.0=neg2Log(Var=newVar,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tU1W=tU1W_H1p,tXW=tXW_H1p,tWW=tWW_H1p,tWy=tWy_H1p,d1=d1,n=n,kw=kw_H1,tauRel=tauRel,logVar=F)
+        if(neg2_log1.0<fit1$value){tau2.permj=0}else{tau2.permj=fit1$par[n.par]}	
         neg2_log0=fit0$value
         neg2_log1=fit1$value
         LR=neg2_log0-neg2_log1      
