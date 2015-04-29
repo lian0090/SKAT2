@@ -53,7 +53,7 @@ fit.optim=function(par,fn,namesPar,logVar=T,tauRel,...){
   	tauw[i]=get(names.tauw[i])
   }
   names(tauw)=names(tauw)
-  }
+  }else tauw=NULL
   return(Var=list(var_e=var_e,taud=taud,tauw=tauw))
   }
 
