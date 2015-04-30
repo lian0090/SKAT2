@@ -22,7 +22,7 @@ if(is.null(namesPar)){stop("par must have names")}
   if(logVar==T){
     Var=exp(Var)
   }
-	
+
   for(i in 1:length(Var)){
   	assign(names(Var)[i],Var[i])
   }
@@ -36,10 +36,12 @@ if(is.null(namesPar)){stop("par must have names")}
   	  	} else{
   	for(i in 1:length(tauRel)){
   		eval(parse(text=tauRel[[i]]))
+  		
   	}  		
    	split.tau=strsplit(tauRel,split="=")
-  	names.tauw=unique(grep("tauw",c(unlist(split.tau),namesPar),value=T))
-    
+   	names.tauw=grep("tauw",c(unlist(split.tau),namesPar),value=T)
+   	names.tauw=gsub(".*(tauw\\d+).*","\\1",names.tauw)
+  	names.tauw=unique(names.tauw)
   }
   if(length(names.tauw)>0){	
   index.tauw=as.numeric(gsub("tauw(\\d+)","\\1",names.tauw))
@@ -51,7 +53,8 @@ if(is.null(namesPar)){stop("par must have names")}
   }
   names(tauw)=names(tauw)
   }else tauw=NULL
-   return(Var=list(var_e=var_e,taud=taud,tauw=tauw))
+  Var=list(var_e=var_e,taud=taud,tauw=tauw)
+  return(Var)
   }
 
 getDL=function(var_e,taud,d1,n,tU1y,tU1X,tXX=NULL,tXy=NULL,tyy=NULL,tauw=NULL,kw=NULL,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=NULL,getQ=F,getS=F,tZtZt=NULL,tU1Zt=NULL,tXZt=NULL,tyZt=NULL,tWZt=NULL){
@@ -210,14 +213,17 @@ getEigenZd=function(Kd=NULL,Zd=NULL,precision=1e-5){
   out=list()
   if(!is.null(Kd) & !is.null(Zd)) stop("Only use one of Kd or Zd")
   if(!is.null(Zd)){
-  	if(nrow(Zd)<=ncol(Zd)) stop("Zd has full column rank, please specify Kd instead of Zd" )
-  }	
-  if(!is.null(Zd)){	
-    #NULL model
-    svdZd=svd(Zd,nv=0)
+  	if(nrow(Zd)<=ncol(Zd)) {
+  		Kd=tcrossprod(scale(Zd,T,F))
+  	    eigenKd=eigen(Kd,symmetric=T)
+    	U1=eigenKd$vectors
+    	d1=eigenKd$values	
+  	}else{
+  	svdZd=svd(Zd,nv=0)
     U1=svdZd$u
     d1=svdZd$d^2 ###Do not forget d^2!!!
-  }else{
+  	}
+  }	else{
     eigenKd=eigen(Kd,symmetric=T)
     U1=eigenKd$vectors
     d1=eigenKd$values	
@@ -227,10 +233,10 @@ getEigenZd=function(Kd=NULL,Zd=NULL,precision=1e-5){
   if(length(wh0>0)){
   	d1=d1[-wh0] 
   	U1=U1[,-wh0]
-  	}
+ 	}
   
-  out$U1=U1
   out$d1=d1
+  out$U1=U1
  
   return(out)
 }
@@ -313,7 +319,7 @@ testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,SKAT=T,Score=F,LR=F,npe
   		n.Rel=length(splittau)
   		if(length(unlist.splittau)>2*length(splittau)) stop("Every equation must contain only one relationship")
   		#strip off the digits, decimal point (.) and +,-,*,/
-  		if(any(!(gsub("([[:digit:][:punct:]]+)","",unlist.splittau)%in% c("taud","tauw")))){
+  		if(any(!(gsub("([[:digit:][:punct:]e]+)","",unlist.splittau)%in% c("taud","tauw","")))){
   			stop("in tauRel, must only specify taud or tauwD, where D is any integer less or equal to the number of W matrix")
   			}
   		left.tau=gsub(".*(tau[wd]{1}\\d*).*","\\1",sapply(splittau,function(a)a[1]))
