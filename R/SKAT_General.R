@@ -87,18 +87,23 @@ getDL=function(var_e,taud,d1,n,tU1y,tU1X,tXX=NULL,tXy=NULL,tyy=NULL,tauw=NULL,kw
       tWVdW=tWU1d_sharp%*%tU1W
       tWVdy=tWU1d_sharp%*%tU1y
     }
-    #Gamma=rep(tau,k) both k and tau are vectors
     Gamma=rep(tauw,kw) ##kw is needed for constructing Gamma
-    Gamma_tWVdW=sweep(tWVdW,2,Gamma,"*")
+   
+    Gamma_tWVdW=sweep(tWVdW,1,Gamma,"*") #!sweep at dim 1
     Vgamma=Gamma_tWVdW
     diag(Vgamma)=diag(Vgamma+1)
     Cgamma=sweep(solve(Vgamma),2,Gamma,"*")
-    tXVinvX=tXVdX-tXVdW%*%Cgamma%*%t(tXVdW)
-    tXVinvy=tXVdy-tXVdW%*%Cgamma%*%tWVdy
+    tXVdW_Cgamma_tWVdX=tXVdW%*%Cgamma%*%t(tXVdW)
+    tXVdW_Cgamma_tWVdy=tXVdW%*%Cgamma%*%tWVdy
+    #print(tXVdW_Cgamma_tWVdX)
+    #cat("\n")
+    tXVinvX=tXVdX-tXVdW_Cgamma_tWVdX
+    tXVinvy=tXVdy-tXVdW_Cgamma_tWVdy
     out$tWVdy=tWVdy
     out$tXVdW=tXVdW
     out$Vgamma=Vgamma
     out$Cgamma=Cgamma	
+
   }else{
     tXVinvX=tXVdX
     tXVinvy=tXVdy
@@ -259,7 +264,7 @@ testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,SKAT=T,Score=F,LR=F,npe
 	# eigenvalue bigger than mean(lambda1[IDX1])/100000 
 	IDX2<-which(lambda1 > mean(lambda1[IDX1])/100000)
 	lambda<-lambda1[IDX2]
-	out$p.value<-Get_PValue.Lambda(lambda, Q)   
+	out$p.SKAT<-Get_PValue.Lambda(lambda, Q)   
   	return(out)
   }
   
