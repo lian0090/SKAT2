@@ -83,13 +83,21 @@ simuPower=function(geno,snp.id=NULL,N,eigenG,mu,var_e,kg=0,ks=0.2,kx=0,nsets=100
   set.seed(seed)
   
   if(is.null(saveAt)){
-    saveAt=paste("ks",ks,".dat",sep="")
+    saveAt=paste("ks",ks,"kx",kx,".dat",sep="")
   }
   
   if(file.exists(saveAt)){
-    stop(saveAt, "exists in disk, please specify a new name for save file")
+    stop(saveAt, " exists in disk, please specify a new name for save file")
   }
-  cat("#","mu=",mu, "var_e=",var_e, "kg=",kg,"ks=",ks, "kx=",kx, "nsets=",nsets, "winsize=", winsize,"nQTL=",nQTL, "alpha=",alpha,"\n",file=saveAt,append=F)
+  cat("# mu =",mu,"\n",
+      "#var_e=",var_e,"\n",
+      "#kg=",kg,"\n",
+      "#ks=",ks, "\n",
+      "#kx=",kx, "\n",
+      "#nsets=",nsets,"\n",
+      "#winsize=", winsize,"\n",
+      "#nQTL=",nQTL, "\n",
+      "#alpha=",alpha,"\n",file=saveAt,append=F)
   
   if("gds.class" %in% class(geno)){
     if(! "gdsfmt" %in% rownames(installed.packages())) stop("must install gdsfmt package to use gds.class file")
