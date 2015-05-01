@@ -7,6 +7,7 @@ meanImpute=function(X){
 	
 #Get columwise multiplication 
 colmult=function(Z1,Z2){
+    if(!is.matrix(Z1) | !is.matrix(Z2)){stop("columult arguments must be matrix ")}
 		p2=ncol(Z1)*ncol(Z2)
 	Z3=matrix(nrow=nrow(Z1),ncol=p2)
 
@@ -129,13 +130,13 @@ simuPower=function(geno,snp.id=NULL,N,eigenG,mu,var_e,kg=0,ks=0.2,kx=0,nsets=100
     Zs_Z_u=simuBeta(Zs,ks,var_e) 
     rm("Zs")
     #GxE
-    Zx=colmult(Xp,Zs_Z_u$Z)
+    Zx=colmult(Xe,Zs_Z_u$Z)
     Zx_Z_u=simuBeta(Zx,kx,var_e)
     rm("Zx")	
     e=rnorm(N,0,sqrt(var_e))
     y=X%*%beta_x+Zg_Z_u$u+Zs_Z_u$u+Zx_Z_u$u+e
     ptm=proc.time()[3]
-    out=testZ(y=y,X=cbind(1,Xp),W=cbind(Zs_Z_u$Z),kw=c(ncol(Zs_Z_u$Z)),Zt=Zx_Z_u$Z,eigenZd=eigenG,SKAT=T,Score=T,LR=F)
+    out=testZ(y=y,X=X,W=cbind(Zs_Z_u$Z),kw=c(ncol(Zs_Z_u$Z)),Zt=Zx_Z_u$Z,eigenZd=eigenG,SKAT=T,Score=T,LR=F)
     ptm2=proc.time()[3]
     if(SKAT==T){
       cat(out$p.SKAT$p.value,"\t",file=saveAt,append=T)
