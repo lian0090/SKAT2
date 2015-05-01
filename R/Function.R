@@ -136,7 +136,7 @@ simuPower=function(geno,snp.id=NULL,N,eigenG,mu,var_e,kg=0,ks=0.2,kx=0,nsets=100
     e=rnorm(N,0,sqrt(var_e))
     y=X%*%beta_x+Zg_Z_u$u+Zs_Z_u$u+Zx_Z_u$u+e
     ptm=proc.time()[3]
-    out=testZ(y=y,X=X,W=cbind(Zs_Z_u$Z),kw=c(ncol(Zs_Z_u$Z)),Zt=Zx_Z_u$Z,eigenZd=eigenG,SKAT=T,Score=T,LR=F)
+    out=testZ(y=y,X=X,W=cbind(Zs_Z_u$Z),kw=c(ncol(Zs_Z_u$Z)),Zt=Zx_Z_u$Z,eigenZd=eigenG,SKAT=SKAT,Score=Score,LR=LR)
     ptm2=proc.time()[3]
     if(SKAT==T){
       cat(out$p.SKAT$p.value,"\t",file=saveAt,append=T)
