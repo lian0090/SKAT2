@@ -69,7 +69,7 @@ return(out)
 }
 
 ##simulate power and size for GxE
-simuPower=function(geno,snp.id=NULL,N,eigenG,mu,var_e,kg=0,ks=0.2,kx=0,nsets=100,winsize=30,seed=1,nQTL=100,Xf,Xe=NULL,SKAT=T,Score=T,LR=F,alpha=0.001,saveAt=NULL){
+simuPower=function(geno,snp.id=NULL,N,eigenG,mu,var_e,kg=0,ks=0.2,kx=0,nsets=100,sets=NULL,winsize=30,seed=1,nQTL=100,Xf,Xe=NULL,SKAT=T,Score=T,LR=F,alpha=0.001,saveAt=NULL){
   
   #geno:  matrix, or gds.class object
   #snp.id: names of SNPs, must be specified for gds object
@@ -120,17 +120,18 @@ simuPower=function(geno,snp.id=NULL,N,eigenG,mu,var_e,kg=0,ks=0.2,kx=0,nsets=100
   rm("Zg")
   
   tnsets=ceiling(p/winsize)
-  
+  if(is.null(sets)){
   if(is.null(nsets)){
     nsets=tnsets
     sets=c(1:nsets)
   }else{
     sets=sample(1:nsets,nsets,replace=F)
   }
+  }else{nsets=length(sets)}
   for(i in 1:nsets) {
     seti=sets[i]
     if("gds.class" %in% class(geno)){
-      Zs=read.gdsn(index.gdsn(genofile, "genotype"), start=c(1,(seti-1)*winsize+1), count=c(-1,min(winsize,p-winsize*seti)))	
+      Zs=read.gdsn(index.gdsn(genofile, "genotype"), start=c(1,(seti-1)*winsize+1), count=c(-1,min(winsize,p-winsize*(seti-1))))	
     }	
     if("matrix" %in% class(geno)){
       Zs=geno[,seq((seti-1)*winsize+1,length.out=min(winsize,p-winsize*seti))]
@@ -157,7 +158,7 @@ simuPower=function(geno,snp.id=NULL,N,eigenG,mu,var_e,kg=0,ks=0.2,kx=0,nsets=100
     }
     cat("\n",file=saveAt,append=T)
     used.time=ptm2-ptm
-    cat(i,used.time,"\n")
+    cat(i,ncol(Zx_Z_u$Z),used.time,"\n")
   }
   p.SKAT=matrix(scan(saveAt,comment="#"),nrow=nsets,byrow=T)
   power=apply(p.SKAT,2,mean) 
