@@ -57,7 +57,7 @@ if(is.null(namesPar)){stop("par must have names")}
   return(Var)
   }
 
-getDL=function(var_e,taud,d1,n,tU1y,tU1X,tXX=NULL,tXy=NULL,tyy=NULL,tauw=NULL,kw=NULL,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=NULL,getQ=F,getS=F,tZtZt=NULL,tU1Zt=NULL,tXZt=NULL,tyZt=NULL,tWZt=NULL){
+getDL=function(var_e,taud,d1,n,tU1y,tU1X,tXX=NULL,tXy=NULL,tyy=NULL,tauw=NULL,kw=NULL,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=NULL,getQ=F,getS=F,get.tU1ehat=T,tZtZt=NULL,tU1Zt=NULL,tXZt=NULL,tyZt=NULL,tWZt=NULL){
   out=list()
   kd=length(d1)
   d_sharp=1/(d1*taud+var_e)
@@ -111,9 +111,11 @@ getDL=function(var_e,taud,d1,n,tU1y,tU1X,tXX=NULL,tXy=NULL,tyy=NULL,tauw=NULL,kw
   
   invtXVinvX=solve(tXVinvX)
   hat_alpha=invtXVinvX%*%tXVinvy
+  if(get.tU1ehat==T){
   tU1_ehat=tU1y-as.vector(tU1X%*%hat_alpha)
-  out$hat_alpha=hat_alpha
   out$tU1_ehat=tU1_ehat
+  }
+  out$hat_alpha=hat_alpha
   out$tXVinvX=tXVinvX
   
   if(getQ==T|getS==T){
