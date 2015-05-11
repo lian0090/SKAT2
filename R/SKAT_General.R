@@ -1,4 +1,4 @@
-fit.optim=function(par,fn,logVar=T,tauRel, ...){
+fit.optim=function(par,fn,logVar=T,tauRel=NULL, ...){
 	namesPar=names(par)
 if(is.null(namesPar)){stop("par must have names")}
   fit<-optim(par=par,fn=fn,logVar=logVar,tauRel=tauRel, ...)

@@ -161,6 +161,6 @@ simuPower=function(geno,snp.id=NULL,N,eigenG,mu,var_e,kg=0,ks=0.2,kx=0,nsets=100
     cat(i,ncol(Zx_Z_u$Z),used.time,"\n")
   }
   p.SKAT=matrix(scan(saveAt,comment="#"),nrow=nsets,byrow=T)
-  power=apply(p.SKAT,2,mean) 
+  power=apply(p.SKAT,2,function(a)mean(a>alpha)) 
   return(power)
 }
