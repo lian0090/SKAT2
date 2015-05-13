@@ -57,7 +57,7 @@ if(is.null(namesPar)){stop("par must have names")}
   return(Var)
   }
 
-getDL=function(var_e,taud,d1,n,tU1y,tU1X,tXX=NULL,tXy=NULL,tyy=NULL,tauw=NULL,kw=NULL,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=NULL,getQ=F,getS=F,get.tU1ehat=T,tZtZt=NULL,tU1Zt=NULL,tXZt=NULL,tyZt=NULL,tWZt=NULL){
+getDL=function(var_e,taud,d1,n,tU1y,tU1X,tXX=NULL,tXy=NULL,tyy=NULL,tauw=NULL,kw=NULL,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=NULL,getQ=F,getS=F,get.tU1ehat=T,tZtZt=NULL,tU1Zt=NULL,tXZt=NULL,tyZt=NULL,tWZt=NULL,get_tSNP=F){
   out=list()
   kd=length(d1)
   d_sharp=1/(d1*taud+var_e)
@@ -162,14 +162,17 @@ getDL=function(var_e,taud,d1,n,tU1y,tU1X,tXX=NULL,tXy=NULL,tyy=NULL,tauw=NULL,kw
     }
     
   }
-  
+  if(get_tSNP==T){
+  	##has not finished yet. 
+    	
+    }
   return(out)
 }
 
 
 
 
-neg2Log=function(Var,tU1y,tU1X,tXX,tXy,tyy,d1,n,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=NULL,kw=NULL,logVar=T,tauRel=NULL){
+neg2Log=function(Var,tU1y,tU1X,tXX,tXy,tyy,d1,n,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=NULL,kw=NULL,logVar=T,tauRel=NULL,REML=T){
   
   #d1 and U1 from d1=svd(Zd)$d^2, U1=svd(Zd)$u 
   Var=get_tau(Var,logVar,tauRel)
@@ -210,8 +213,11 @@ neg2Log=function(Var,tU1y,tU1X,tXX,tXy,tyy,d1,n,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=
   } 	
   
   neg2logLik2=log(det(tXVinvX))
-  
-  out<- sum(neg2logLik1,neg2logLik2,neg2logLik3)
+ if(REML==T){
+   out<- sum(neg2logLik1,neg2logLik2,neg2logLik3)
+   }else{
+   out<- sum(neg2logLik1,neg2logLik3)
+   }
   return(out)
 }
 
