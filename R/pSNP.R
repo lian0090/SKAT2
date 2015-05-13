@@ -22,7 +22,8 @@ pSNP.P3D=function(y,X,Var,eigenG,test=NULL,LRfix=T){
  #Xf: fixed effect (not included in GxE)
  #Xe: fixed effect (included for GxE) 	
  #test: which fixed effect to be tested. The default is to test the last one of fixed effect
- 	if(is.null(test)){
+ 	n.beta=ncol(X)		
+	if(is.null(test)){
  	test=n.beta	
  	}
  	if(length(test>1)){
@@ -48,7 +49,6 @@ pSNP.P3D=function(y,X,Var,eigenG,test=NULL,LRfix=T){
  	outDL=getDL(var_e=var_e,taud=taud,d1=d1,n=n,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,get.tU1ehat=F)
  	beta=outDL$hat_alpha
  	vbeta=solve(outDL$tXVinvX)
- 	n.beta=length(beta) 		
  	tscore=beta[test]/sqrt(vbeta[test])
  	##note: the df for t-distribution is not corrected by Satterthwaite's method. Likelihood ratio test should be better.
  	p.value=2*pt(tscore,df=n-n.beta,lower.tail=F)

@@ -106,8 +106,8 @@ simuPower=function(geno,snp.id=NULL,N,eigenG,mu,var_e,kg=0,ks=0.2,kx=0,nsets=100
   	Zsj=Zs_Z_u$Z[,j]
   	test=(ncol(Xe)*(j-1)+1):(ncol(Xe)*j)
   	Zxj=Zx_Z_u$Z[,test]	
-  	p.value=tSNP.P3D(y,cbind(X,Zsj,Zxj),Var=tSNP.fit0,eigenG=eigenG,test=test)
-  	cat()
+  	p.value=pSNP.P3D(y,cbind(X,Zsj,Zxj),Var=tSNP.fit0,eigenG=eigenG,test=test)
+  	cat(p.value,"\t",file=saveAt,append=T)
   }
   }
 
