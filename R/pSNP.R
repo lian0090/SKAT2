@@ -21,7 +21,8 @@ pSNP.P3D=function(y,X,Var,eigenG,test=NULL,LRfix=T){
  #fit NULL model without SNP and SNP GxE effet	
  #Xf: fixed effect (not included in GxE)
  #Xe: fixed effect (included for GxE) 	
- #test: which fixed effect to be tested. The default is to test the last one of fixed effect
+ #test: which fixed effect to be tested. The default is to test the last one of fixed effect\
+    	out=list()
  	n.beta=ncol(X)		
 	if(is.null(test)){
  	test=n.beta	
@@ -37,6 +38,10 @@ pSNP.P3D=function(y,X,Var,eigenG,test=NULL,LRfix=T){
  	 	ln1=getLoglik(Var=Var,y,X=X,eigenZd=eigenG,logVar=F)
  	 	Q=-2*(ln0-ln1)
  	 	p.value=pchisq(Q,df=length(test),lower.tail=F)
+ 	  	out$p.value=p.value
+ 	 	out$ML1=ln1
+ 	 	out$ML0=ln0
+ 	 	out$LR=Q
  	 	}else{
  	n=length(y)
 	U1=eigenG$U1
@@ -52,6 +57,7 @@ pSNP.P3D=function(y,X,Var,eigenG,test=NULL,LRfix=T){
  	tscore=beta[test]/sqrt(vbeta[test])
  	##note: the df for t-distribution is not corrected by Satterthwaite's method. Likelihood ratio test should be better.
  	p.value=2*pt(tscore,df=n-n.beta,lower.tail=F)
+ 	out$p.value=p.value 	
  	 	}
     return(p.value)
  }
