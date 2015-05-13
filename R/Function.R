@@ -37,7 +37,7 @@ simuBeta=function(Z,k,var_e=1){
 }
 
 #get loglikelihood for Var
-getLoglik=function(Var,y,X,W,kw,eigenZd,logVar,tauRel,REML=T){
+getLoglik=function(Var,y,X,W=NULL,kw=NULL,eigenZd,logVar,tauRel=NULL,REML=T){
 if(is.null(names(Var))){stop("Var must have names")}	
 U1=eigenZd$U1
 d1=eigenZd$d1
