@@ -22,18 +22,6 @@ tSNP.P3D=function(y,X,Var,eigenG,test=NULL,LRfix=T){
  #Xf: fixed effect (not included in GxE)
  #Xe: fixed effect (included for GxE) 	
  #test: which fixed effect to be tested. The default is to test the last one of fixed effect
- 	n=length(y)
-	U1=eigenG$U1
-	d1=eigenG$d1
-	tXX=crossprod(X)
-	tU1y=crossprod(U1,y)
- 	tU1X=crossprod(U1,X)
- 	tXy=crossprod(X,y)
- 	tyy=sum(y^2)
- 	outDL=getDL(var_e=var_e,taud=taud,d1=d1,n=n,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,get.tU1ehat=F)
- 	beta=outDL$hat_alpha
- 	vbeta=solve(outDL$tXVinvX)
- 	n.beta=length(beta)
  	if(is.null(test)){
  	test=n.beta	
  	}
@@ -47,8 +35,20 @@ tSNP.P3D=function(y,X,Var,eigenG,test=NULL,LRfix=T){
  		ln0=getLoglik(Var=Var,y,X=X[,setdiff((1:ncol(X)),test)],eigenZd,logVar=F)
  	 	ln1=getLoglik(Var=Var,y,X=X,eigenZd=eigenG,logVar=F)
  	 	Q=-2*(ln0-ln1)
- 	 	pchisq(Q,df=length(test),lower.tail=F)
+ 	 	p.value=pchisq(Q,df=length(test),lower.tail=F)
  	 	}else{
+ 	n=length(y)
+	U1=eigenG$U1
+	d1=eigenG$d1
+	tXX=crossprod(X)
+	tU1y=crossprod(U1,y)
+ 	tU1X=crossprod(U1,X)
+ 	tXy=crossprod(X,y)
+ 	tyy=sum(y^2)
+ 	outDL=getDL(var_e=var_e,taud=taud,d1=d1,n=n,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,get.tU1ehat=F)
+ 	beta=outDL$hat_alpha
+ 	vbeta=solve(outDL$tXVinvX)
+ 	n.beta=length(beta) 		
  	tscore=beta[test]/sqrt(vbeta[test])
  	##note: the df for t-distribution is not corrected by Satterthwaite's method. Likelihood ratio test should be better.
  	p.value=2*pt(tscore,df=n-n.beta,lower.tail=F)
