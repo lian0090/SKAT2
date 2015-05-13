@@ -3,6 +3,6 @@ useDynLib(SKAT2, .registration = TRUE)
 
 
 # functions
-export(Get_PValue.Lambda,colmult,fit.optim,getDL,neg2Log,getEigenZd,testZ,meanImpute,tr,simuBeta,simuPower,P3D.NULL,pSNP.P3D,pSNP)
+export(Get_PValue.Lambda,colmult,fit.optim,getDL,neg2Log,getEigenZd,testZ,meanImpute,tr,simuBeta,simuPower,P3D.NULL,pSNP.P3D,pSNP,getLoglik)
 
 
