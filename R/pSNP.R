@@ -34,8 +34,8 @@ pSNP.P3D=function(y,X,Var,eigenG,test=NULL,LRfix=T){
  	}
  	#use LR test if length.test>1
  	if(LRfix==T){
- 		ln0=getLoglik(Var=Var,y,X=X[,setdiff((1:ncol(X)),test)],eigenZd=eigenG,logVar=F)
- 	 	ln1=getLoglik(Var=Var,y,X=X,eigenZd=eigenG,logVar=F)
+ 		ln0=getLoglik(Var=Var,y,X=X[,setdiff((1:ncol(X)),test)],eigenZd=eigenG,logVar=F,REML=F)
+ 	 	ln1=getLoglik(Var=Var,y,X=X,eigenZd=eigenG,logVar=F,REML=F)
  	 	Q=-2*(ln0-ln1)
  	 	p.value=pchisq(Q,df=length(test),lower.tail=F)
  	  	out$p.value=p.value
