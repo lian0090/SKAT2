@@ -59,7 +59,7 @@ pSNP.P3D=function(y,X,Var,eigenG,test=NULL,LRfix=T){
  	p.value=2*pt(tscore,df=n-n.beta,lower.tail=F)
  	out$p.value=p.value 	
  	 	}
-    return(p.value)
+    return(out)
  }
  
  ###population parameter re-estimated for each marker
