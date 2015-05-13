@@ -180,7 +180,7 @@ neg2Log=function(Var,tU1y,tU1X,tXX,tXy,tyy,d1,n,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=
   	assign(names(Var)[i],Var[[i]])
   } 
  
-   
+  
   kd=length(d1)
   terms=getDL(var_e=var_e,taud=taud,d1=d1,n=n,tauw=tauw,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tU1W=tU1W,tXW=tXW,tWW=tWW,tWy=tWy,kw=kw,getQ=F)
   tXVinvX=terms$tXVinvX
@@ -214,9 +214,10 @@ neg2Log=function(Var,tU1y,tU1X,tXX,tXy,tyy,d1,n,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=
   
   neg2logLik2=log(det(tXVinvX))
  if(REML==T){
-   out<- sum(neg2logLik1,neg2logLik2,neg2logLik3)
+   kx=ncol(tXX)	
+   out<- sum(neg2logLik1,neg2logLik2,neg2logLik3)+(n-kx)*log(2*pi)-log(det(tXX))
    }else{
-   out<- sum(neg2logLik1,neg2logLik3)
+   out<- sum(neg2logLik1,neg2logLik3)+n*log(2*pi)
    }
   return(out)
 }
