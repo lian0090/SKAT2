@@ -16,7 +16,7 @@ P3D.NULL=function(y,X,eigenG){
 	fit0<-fit.optim(par=Var,fn=neg2Log,logVar=T,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,d1=d1,n=n)
 	return(fit0$par)
 }
-tSNP.P3D=function(y,X,Var,eigenG,test=NULL,LRfix=T){
+pSNP.P3D=function(y,X,Var,eigenG,test=NULL,LRfix=T){
  #Var: population variance components: var_e and taud	
  #fit NULL model without SNP and SNP GxE effet	
  #Xf: fixed effect (not included in GxE)
@@ -57,7 +57,7 @@ tSNP.P3D=function(y,X,Var,eigenG,test=NULL,LRfix=T){
  }
  
  ###population parameter re-estimated for each marker
- tSNP=function(y,X,eigenG){
+ pSNP=function(y,X,eigenG){
  	n=length(y)
 	U1=eigenG$U1
 	d1=eigenG$d1
