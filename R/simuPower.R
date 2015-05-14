@@ -1,5 +1,5 @@
 ##simulate power and size for GxE
-simuPower=function(geno,snp.id=NULL,N,eigenG,mu,var_e,kg=0,ks=0.2,kx=0,nsets=100,sets=NULL,winsize=30,seed=1,nQTL=100,Xf,Xe=NULL,SKAT=T,Score=T,LR=F,alpha=0.001,saveAt=NULL,singleSNPtest=F){
+simuPower=function(geno,snp.id=NULL,N,eigenG,mu,var_e,kg=0,ks=0.2,kx=0,nsets=100,sets=NULL,winsize=30,seed=1,nQTL=100,Xf,Xe=NULL,SKAT=T,Score=T,LR=F,alpha=0.001,saveAt=NULL,singleSNPtest=F,rewrite=F){
   
   #geno:  matrix, or gds.class object
   #snp.id: names of SNPs, must be specified for gds object
@@ -18,9 +18,10 @@ simuPower=function(geno,snp.id=NULL,N,eigenG,mu,var_e,kg=0,ks=0.2,kx=0,nsets=100
   }
   
   
-  
+  if(rewrite==F){
   if(file.exists(saveAt)){
     stop(saveAt, " exists in disk, please specify a new name for save file")
+  }
   }
   cat("# mu =",mu,"\n",
       "#var_e=",var_e,"\n",
