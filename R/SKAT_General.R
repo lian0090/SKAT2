@@ -214,9 +214,11 @@ neg2Log=function(Var,tU1y,tU1X,tXX,tXy,tyy,d1,n,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=
   
   neg2logLik2=log(det(tXVinvX))
  if(REML==T){
-   kx=ncol(tXX)	
-   out<- sum(neg2logLik1,neg2logLik2,neg2logLik3)+(n-kx)*log(2*pi)-log(det(tXX))
-   }else{
+   out<- sum(neg2logLik1,neg2logLik2,neg2logLik3)
+   #compatible with emma
+   #kx=ncol(tXX)
+   #out<- sum(neg2logLik1,neg2logLik2,neg2logLik3)+(n-kx)*log(2*pi)-log(det(tXX))
+  }else{
    out<- sum(neg2logLik1,neg2logLik3)+n*log(2*pi)
    }
   return(out)
