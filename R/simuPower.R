@@ -1,5 +1,5 @@
 ##simulate power and size for GxE
-simuPower=function(geno,snp.id=NULL,N,eigenG,mu,var_e,kg=0,ks=0.2,kx=0,nsets=100,sets=NULL,winsize=30,seed=1,nQTL=100,Xf,Xe=NULL,SKAT=T,Score=T,LR=F,alpha=0.001,saveAt=NULL,get_pSNP=F){
+simuPower=function(geno,snp.id=NULL,N,eigenG,mu,var_e,kg=0,ks=0.2,kx=0,nsets=100,sets=NULL,winsize=30,seed=1,nQTL=100,Xf,Xe=NULL,SKAT=T,Score=T,LR=F,alpha=0.001,saveAt=NULL,singleSNPtest=F){
   
   #geno:  matrix, or gds.class object
   #snp.id: names of SNPs, must be specified for gds object
@@ -10,7 +10,7 @@ simuPower=function(geno,snp.id=NULL,N,eigenG,mu,var_e,kg=0,ks=0.2,kx=0,nsets=100
   #Xf: fixed effect (not included in GxE)
   #Xe: fixed effect (included for GxE) 
   #alpha: test size
-  #get_pSNP: whether to get p-value by single SNP test
+  #singleSNPtest: whether to get p-value by single SNP test
   set.seed(seed)
   
   if(is.null(saveAt)){
@@ -65,7 +65,7 @@ simuPower=function(geno,snp.id=NULL,N,eigenG,mu,var_e,kg=0,ks=0.2,kx=0,nsets=100
   e=rnorm(N,0,sqrt(var_e))
   y0=X%*%beta_x
  
-  if(get_tSNP==T){
+  if(singleSNPtest==T){
   	##fit P3D.NULL
   	tSNP.fit0=P3D.NULL(y0,X,eigenG)
   }
@@ -101,12 +101,12 @@ simuPower=function(geno,snp.id=NULL,N,eigenG,mu,var_e,kg=0,ks=0.2,kx=0,nsets=100
     if(LR==T){
       cat(out$p.LR,"\t",file=saveAt,append=T)
     }
-    if(get_pSNP==T){
+    if(singleSNPtest==T){
   	for(j in 1:win.count){
   	Zsj=Zs_Z_u$Z[,j]
   	test=(ncol(Xe)*(j-1)+1):(ncol(Xe)*j)
   	Zxj=Zx_Z_u$Z[,test]	
-  	p.value=pSNP.P3D(y,cbind(X,Zsj,Zxj),Var=tSNP.fit0,eigenG=eigenG,test=test)$p.value
+  	p.value=singleSNP.P3D(y,cbind(X,Zsj,Zxj),Var=tSNP.fit0,eigenG=eigenG,test=test)$p.value
   	cat(p.value,"\t",file=saveAt,append=T)
   }
   }

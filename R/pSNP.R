@@ -16,7 +16,7 @@ P3D.NULL=function(y,X,eigenG){
 	fit0<-fit.optim(par=Var,fn=neg2Log,logVar=T,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,d1=d1,n=n)
 	return(fit0$par)
 }
-pSNP.P3D=function(y,X,Var,eigenG,test=NULL,LRfix=T){
+singleSNP.P3D=function(y,X,Var,eigenG,test=NULL,LR=T){
  #Var: population variance components: var_e and taud	
  #fit NULL model without SNP and SNP GxE effet	
  #Xf: fixed effect (not included in GxE)
@@ -28,12 +28,12 @@ pSNP.P3D=function(y,X,Var,eigenG,test=NULL,LRfix=T){
  	test=n.beta	
  	}
  	if(length(test>1)){
- 		if(LRfix==F){
+ 		if(LR==F){
  			stop("use LR test when there is more than one fix effect to be tested")
  		}
  	}
  	#use LR test if length.test>1
- 	if(LRfix==T){
+ 	if(LR==T){
  		ln0=getLoglik(Var=Var,y,X=X[,setdiff((1:ncol(X)),test)],eigenZd=eigenG,logVar=F,REML=F)
  	 	ln1=getLoglik(Var=Var,y,X=X,eigenZd=eigenG,logVar=F,REML=F)
  	 	Q=-2*(ln0-ln1)
@@ -63,7 +63,7 @@ pSNP.P3D=function(y,X,Var,eigenG,test=NULL,LRfix=T){
  }
  
  ###population parameter re-estimated for each marker
- pSNP=function(y,X,eigenG){
+ singleSNP=function(y,X,eigenG){
  	n=length(y)
 	U1=eigenG$U1
 	d1=eigenG$d1
