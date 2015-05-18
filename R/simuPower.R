@@ -51,7 +51,7 @@ simuPower=function(geno,SNPstart,SNPend,nsets=NULL,eigenG,var_e,kg=0,ks=0.2,kx=0
   }
     
   if(nQTL>0){
-    bcQTLs=sample(1:p,nQTL)    
+    bcQTLs=sample(SNPstart:SNPend,nQTL)    
     Zg=genofile[,bcQTLs]
     ug=simuBeta(Zg,kg,var_e)$u
   }else{
@@ -75,7 +75,7 @@ simuPower=function(geno,SNPstart,SNPend,nsets=NULL,eigenG,var_e,kg=0,ks=0.2,kx=0
   	    seti=sets[i]
   	    cat(i,"set:", seti,"\n")
   	    ptm=proc.time()[3]
-    win.start=(seti-1)*winsize+snpstart
+    win.start=(seti-1)*winsize+SNPstart
     win.count=min(winsize,p-winsize*(seti-1))
     win.end=win.start+win.count-1
     Zs=genofile[,win.start:win.end]	
@@ -107,9 +107,8 @@ simuPower=function(geno,SNPstart,SNPend,nsets=NULL,eigenG,var_e,kg=0,ks=0.2,kx=0
   	for(j in 1:win.count){
   	Zsj=Zs$Z[,j,drop=F]
   	if(GxE==T){
-  	#col.Zxj=((ncol(Xe)*(j-1)+1):(ncol(Xe)*j))
-  	#Zxj=Zx$Z[,col.Zxj,drop=F]
-  	Zxj=colmult(Xe,Zsj)
+  	col.Zxj=((ncol(Xe)*(j-1)+1):(ncol(Xe)*j))
+  	Zxj=Zx$Z[,col.Zxj,drop=F]
   	nZxj=ncol(Zxj)	
   	test=c((ncol(X)+ncol(Zsj))+(1:nZxj))
   	p.value=singleSNP.P3D(y,cbind(X,Zsj,Zxj),Var=tSNP.fit0,eigenG=eigenG,test=test)$p.value

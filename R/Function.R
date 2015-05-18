@@ -5,7 +5,8 @@ meanImpute=function(X){
 	return(X)
 	}
 	
-#Get columwise multiplication 
+#Get columwise multiplication
+#if ncol(Z2)=p, there are p chunks of Z1*Z2[,j] 
 colmult=function(Z1,Z2){
     #return Z3, Z3=(Z1*Z2[,1],Z1*Z2[,2],..Z1*Z2[,ncol(Z2)])
     if(!is.matrix(Z1) | !is.matrix(Z2)){stop("columult arguments must be matrix ")}
