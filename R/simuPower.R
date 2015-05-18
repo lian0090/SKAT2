@@ -52,7 +52,7 @@ simuPower=function(geno,SNPstart,SNPend,nsets=NULL,eigenG,var_e,kg=0,ks=0.2,kx=0
     
   if(nQTL>0){
     bcQTLs=sample(SNPstart:SNPend,nQTL)    
-    Zg=genofile[,bcQTLs]
+    Zg=geno[,bcQTLs]
     ug=simuBeta(Zg,kg,var_e)$u
   }else{
   	ug=eigenG$U1%*%rnorm(length(eigenG$d1),mean=0,sd=sqrt(kg*var_e/mean(eigenG$d1)))
@@ -78,7 +78,7 @@ simuPower=function(geno,SNPstart,SNPend,nsets=NULL,eigenG,var_e,kg=0,ks=0.2,kx=0
     win.start=(seti-1)*winsize+SNPstart
     win.count=min(winsize,p-winsize*(seti-1))
     win.end=win.start+win.count-1
-    Zs=genofile[,win.start:win.end]	
+    Zs=geno[,win.start:win.end]	
     Zs=simuBeta(Zs,ks,var_e) 
     y=y0+Zs$u
     if(GxE==T){
