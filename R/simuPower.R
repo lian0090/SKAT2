@@ -14,26 +14,7 @@ simuPower=function(geno,SNPstart,SNPend,nsets=NULL,eigenG,var_e,kg=0,ks=0.2,kx=0
   #Xe: fixed effect (included for GxE) 
   #alpha: test size
   #singleSNPtest: whether to get p-value by single SNP test
-
-`[.gds.class` <- 
-    function(x, samples,snps)
-{
-       if(missing(samples)){
-       	sample.id=NULL
-       }else{
-       	if(is.numeric(samples)){
-       		sample.id=read.gdsn(index.gdsn(x,"sample.id"))[samples]
-       	}else if (is.character(samples)) sample.id=samples
-       	}       	
-       if(missing(snps)){
-       	snp.id=NULL
-       }else{
-        if(is.numeric(snps)){	
-       	snp.id=read.gdsn(index.gdsn(x,"snp.id"))[snps]
-       	}else if (is.character(j)) snp.id=snps
-       }
-    return(snpgdsGetGeno(x,sample.id=sample.id,snp.id=snp.id))
-}  
+  
   ##begin subsetting populations
   set.seed(seed)
   if(is.null(saveAt)){
