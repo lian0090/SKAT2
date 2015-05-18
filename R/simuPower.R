@@ -74,27 +74,30 @@ simuPower=function(geno,SNPstart,SNPend,nsets=NULL,eigenG,var_e,kg=0,ks=0.2,kx=0
   for(i in 1:nsets) {
   	    seti=sets[i]
   	    cat(i,"set:", seti,"\n")
-  	    ptm=proc.time()[3]
+  	   
     win.start=(seti-1)*winsize+SNPstart
     win.count=min(winsize,p-winsize*(seti-1))
     win.end=win.start+win.count-1
     Zs=geno[,win.start:win.end]	
     Zs=simuBeta(Zs,ks,var_e) 
     y=y0+Zs$u
+    
     if(GxE==T){
     #GxE
     Zx=colmult(Xe,Zs$Z)
     Zx=simuBeta(Zx,kx,var_e)	
     y=y+Zx$u
+    ptm=proc.time()[3]
     out=testZ(y=y,X=X,W=Zs$Z,kw=c(ncol(Zs$Z)),Zt=Zx$Z,eigenZd=eigenG,SKAT=SKAT,Score=Score,LR=LR)
     }else{
+    ptm=proc.time()[3]	
     out=testZ(y=y,X=X,Zt=Zs$Z,eigenZd=eigenG,SKAT=SKAT,Score=Score,LR=LR)		
     }
     ptm2=proc.time()[3]
     if(SKAT==T){
-      used.timeSKAT=ptm2-ptm	
+      used.timeWindowtest=ptm2-ptm	
       cat(out$p.SKAT$p.value,"\t",file=saveAt,append=T)
-      cat(i,ncol(Zs$Z),"used.timeSKAT:", used.timeSKAT,"\n")
+      cat(i,ncol(Zs$Z),"used.timeWindowtest:", used.timeWindowtest,"\n")
     }
     if(Score==T){
       cat(out$p.Score,"\t",file=saveAt,append=T)
