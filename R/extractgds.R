@@ -1,6 +1,3 @@
-##' @name `[`
-##' @export `[.gds.class`
-##' @method `[` gds.class
 
 `[.gds.class` <- 
     function(x, samples,snps)
