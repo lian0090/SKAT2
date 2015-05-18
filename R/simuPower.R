@@ -1,29 +1,53 @@
 ##simulate power and size for GxE
-simuPower.GxE=function(geno,snp.id=NULL,N,eigenG,mu,var_e,kg=0,ks=0.2,kx=0,nsets=100,sets=NULL,winsize=30,seed=1,nQTL=100,Xf,Xe=NULL,SKAT=T,Score=T,LR=F,alpha=0.001,saveAt=NULL,singleSNPtest=F,rewrite=F,GxE=T){
-  
-  #geno:  matrix, or gds.class object
-  #snp.id: names of SNPs, must be specified for gds object
-  #N size of population, 
+##plink returns G matrix as the mena variance of marker genotype. 
+##if a subset of individual is selected, will eigenG work for a smaller number of individuals?
+##only test the autosome SNPs
+simuPower=function(geno,SNPstart,SNPend,nsets=NULL,eigenG,var_e,kg=0,ks=0.2,kx=0,winsize=30,seed=1,nQTL=0,Xf,Xe,SKAT=T,Score=T,LR=F,alpha=0.05,saveAt=NULL,singleSNPtest=F,rewrite=F,GxE=T){
+  #geno:  matrix, or gds.class object, snps in columns and individual in rows.
+  #SNPstart: start position of snp to be tested
+  #SNPend: end position of snp to be tested
+  #nsets: number of sets for simulation
   #eigenG: eigen decoposition for G matrix
   #winsize: windowsize 
-  #nQTL: number of QTLs in the genetic background
+  #nQTL: number of major QTLs in the genetic background, defaul is 0
   #Xf: fixed effect (not included in GxE)
   #Xe: fixed effect (included for GxE) 
   #alpha: test size
   #singleSNPtest: whether to get p-value by single SNP test
+
+`[.gds.class` <- 
+    function(x, samples,snps)
+{
+       if(missing(samples)){
+       	sample.id=NULL
+       }else{
+       	if(is.numeric(samples)){
+       		sample.id=read.gdsn(index.gdsn(x,"sample.id"))[samples]
+       	}else if (is.character(samples)) sample.id=samples
+       	}       	
+       if(missing(snps)){
+       	snp.id=NULL
+       }else{
+        if(is.numeric(snps)){	
+       	snp.id=read.gdsn(index.gdsn(x,"snp.id"))[snps]
+       	}else if (is.character(j)) snp.id=snps
+       }
+    return(snpgdsGetGeno(x,sample.id=sample.id,snp.id=snp.id))
+}  
+  ##begin subsetting populations
   set.seed(seed)
-  
   if(is.null(saveAt)){
     saveAt=paste("ks",ks,"kx",kx,".dat",sep="")
   }
   
-  
+  n.windowtest=length(which(c(SKAT,Score,LR)==T))
   if(rewrite==F){
   if(file.exists(saveAt)){
     stop(saveAt, " exists in disk, please specify a new name for save file")
   }
   }
-  cat("# mu =",mu,"\n",
+  
+  cat(
       "#var_e=",var_e,"\n",
       "#kg=",kg,"\n",
       "#ks=",ks, "\n",
@@ -31,40 +55,34 @@ simuPower.GxE=function(geno,snp.id=NULL,N,eigenG,mu,var_e,kg=0,ks=0.2,kx=0,nsets
       "#nsets=",nsets,"\n",
       "#winsize=", winsize,"\n",
       "#nQTL=",nQTL, "\n",
-      "#alpha=",alpha,"\n",file=saveAt,append=F)
+      "#alpha=",alpha,"\n",
+      "#n.windowtest=",n.windowtest,"\n",file=saveAt,append=F)
+      
   
-  if("gds.class" %in% class(geno)){
-    if(! "gdsfmt" %in% rownames(installed.packages())) stop("must install gdsfmt package to use gds.class file")
-    if(is.null(snp.id)){stop("must specify snp.id for gds object")}
-    p=length(snp.id)
-    bcQTLs=sample(1:p,100)
-    Zgsnps=snp.id[bcQTLs]
-    Zg=snpgdsGetGeno(genofile,sample.id=NULL,snp.id=Zgsnps,snpfirstdim=F)
-    
-  }
-  if("matrix" %in% class(geno)){
-    p=ncol(geno)
-    bcQTLs=sample(1:p,100)
-    Zg=geno[,bcQTLs]
-  }
-  X=cbind(Xf,Xe)
-  beta_x=rep(0.5/ncol(X),ncol(X))
-  beta_g=kg*var_e
-  Zg_Z_u=simuBeta(Zg,kg,var_e)
-  rm("Zg")
-  
+  p=SNPend-SNPstart+1
+  N=nrow(eigenG$U1)
   tnsets=ceiling(p/winsize)
-  if(is.null(sets)){
   if(is.null(nsets)){
     nsets=tnsets
     sets=c(1:nsets)
   }else{
     sets=sample(1:tnsets,nsets,replace=F)
   }
-  }else{nsets=length(sets)}
+    
+  if(nQTL>0){
+    bcQTLs=sample(1:p,nQTL)    
+    Zg=genofile[,bcQTLs]
+    ug=simuBeta(Zg,kg,var_e)$u
+  }else{
+  	ug=eigenG$U1%*%rnorm(length(eigenG$d1),mean=0,sd=sqrt(kg*var_e/mean(eigenG$d1)))
+  }
+ 
   
+  X=cbind(Xf,Xe)
+  beta_x=rep(0.5/ncol(X),ncol(X))
+     
   e=rnorm(N,0,sqrt(var_e))
-  y0=X%*%beta_x+e
+  y0=X%*%beta_x+ug+e
  
   if(singleSNPtest==T){
   	##fit P3D.NULL
@@ -76,31 +94,26 @@ simuPower.GxE=function(geno,snp.id=NULL,N,eigenG,mu,var_e,kg=0,ks=0.2,kx=0,nsets
   	    seti=sets[i]
   	    cat(i,"set:", seti,"\n")
   	    ptm=proc.time()[3]
-    win.start=(seti-1)*winsize+1
+    win.start=(seti-1)*winsize+snpstart
     win.count=min(winsize,p-winsize*(seti-1))
     win.end=win.start+win.count-1
-    if("gds.class" %in% class(geno)){
-      Zs=read.gdsn(index.gdsn(genofile, "genotype"), start=c(1,win.start), count=c(-1,win.count))	
-    }	
-    if("matrix" %in% class(geno)){
-      Zs=geno[,seq((seti-1)*winsize+1,length.out=win.count)]
-    }
-    Zs_Z_u=simuBeta(Zs,ks,var_e) 
-    rm("Zs")
-    y=y0+Zg_Z_u$u+Zs_Z_u$u
+    Zs=genofile[,win.start:win.end]	
+    Zs=simuBeta(Zs,ks,var_e) 
+    y=y0+Zs$u
     if(GxE==T){
     #GxE
-    Zx=colmult(Xe,Zs_Z_u$Z)
-    Zx_Z_u=simuBeta(Zx,kx,var_e)
-    rm("Zx")	
-    y=y+Zx_Z_u$u
-    out=testZ(y=y,X=X,W=Zs_Z_u$Z,kw=c(ncol(Zs_Z_u$Z)),Zt=Zx_Z_u$Z,eigenZd=eigenG,SKAT=SKAT,Score=Score,LR=LR)
+    Zx=colmult(Xe,Zs$Z)
+    Zx=simuBeta(Zx,kx,var_e)	
+    y=y+Zx$u
+    out=testZ(y=y,X=X,W=Zs$Z,kw=c(ncol(Zs$Z)),Zt=Zx$Z,eigenZd=eigenG,SKAT=SKAT,Score=Score,LR=LR)
     }else{
-    out=testZ(y=y,X=X,Zt=Zx_Z_u$Z,eigenZd=eigenG,SKAT=SKAT,Score=Score,LR=LR)		
+    out=testZ(y=y,X=X,Zt=Zs$Z,eigenZd=eigenG,SKAT=SKAT,Score=Score,LR=LR)		
     }
     ptm2=proc.time()[3]
     if(SKAT==T){
+      used.timeSKAT=ptm2-ptm	
       cat(out$p.SKAT$p.value,"\t",file=saveAt,append=T)
+      cat(i,ncol(Zs$Z),"used.timeSKAT:", used.timeSKAT,"\n")
     }
     if(Score==T){
       cat(out$p.Score,"\t",file=saveAt,append=T)
@@ -111,10 +124,11 @@ simuPower.GxE=function(geno,snp.id=NULL,N,eigenG,mu,var_e,kg=0,ks=0.2,kx=0,nsets
     if(singleSNPtest==T){
     ##if marker is non-polymorphic, fixed effect will not work!!	
   	for(j in 1:win.count){
-  	Zsj=Zs_Z_u$Z[,j,drop=F]
+  	Zsj=Zs$Z[,j,drop=F]
   	if(GxE==T){
-  	col.Zxj=((ncol(Xe)*(j-1)+1):(ncol(Xe)*j))
-  	Zxj=Zx_Z_u$Z[,col.Zxj,drop=F]
+  	#col.Zxj=((ncol(Xe)*(j-1)+1):(ncol(Xe)*j))
+  	#Zxj=Zx$Z[,col.Zxj,drop=F]
+  	Zxj=colmult(Xe,Zsj)
   	nZxj=ncol(Zxj)	
   	test=c((ncol(X)+ncol(Zsj))+(1:nZxj))
   	p.value=singleSNP.P3D(y,cbind(X,Zsj,Zxj),Var=tSNP.fit0,eigenG=eigenG,test=test)$p.value
@@ -125,17 +139,24 @@ simuPower.GxE=function(geno,snp.id=NULL,N,eigenG,mu,var_e,kg=0,ks=0.2,kx=0,nsets
   	cat(p.value,"\t",file=saveAt,append=T)
   }
   ptm3=proc.time()[3]
-  }
+  used.timeSingleSNP=ptm3-ptm2
+  cat(i,ncol(Zs$Z),"used.timeSingleSNP:",used.timeSingleSNP,"\n")
+ }
 
     
     cat("\n",file=saveAt,append=T)
-    used.timeSKAT=ptm2-ptm
-    used.timeSingleSNP=ptm3-ptm2
-    cat(i,ncol(Zx_Z_u$Z),used.timeSKAT,used.timeSingleSNP,"\n")
+    
     }
-  
-  p.SKAT=matrix(scan(saveAt,comment="#"),nrow=nsets,byrow=T)
-  power=apply(p.SKAT,2,function(a)mean(a>alpha)) 
+  power=list()
+  pvalues=matrix(scan(saveAt,comment="#"),nrow=nsets,byrow=T)
+  p.window=pvalues[,c(1:n.windowtest),drop=F]
+  power.window=apply(p.window,2,function(a)mean(a<alpha)) 
+  power$power.window=power.window
+  if(singleSNPtest==T){
+  p.singleSNP=pvalues[,-c(1:n.windowtest),drop=F]
+  power.singleSNP=mean(na.omit(as.vector(p.singleSNP))<alpha)
+  power$power.singleSNP=power.singleSNP
+  }
   return(power)
 }
 
