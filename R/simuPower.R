@@ -115,6 +115,7 @@ simuPower=function(geno,SNPstart,SNPend,nsets=NULL,sets=NULL,eigenG,var_e,kg=0,k
     if(singleSNPtest==T){
     ##if marker is non-polymorphic, fixed effect will not work!!	
   	for(j in 1:win.count){
+  	cat(j,", ")	
   	Zsj=Zs$Z[,j,drop=F]
   	if(GxE==T){
   	col.Zxj=((ncol(Xe)*(j-1)+1):(ncol(Xe)*j))
@@ -128,6 +129,7 @@ simuPower=function(geno,SNPstart,SNPend,nsets=NULL,sets=NULL,eigenG,var_e,kg=0,k
   	}
   	cat(p.value,"\t",file=saveAt,append=T)
   }
+  cat("\n")
   ptm3=proc.time()[3]
   used.timeSingleSNP=ptm3-ptm2
   cat(i,ncol(Zs$Z),"used.timeSingleSNP:",used.timeSingleSNP,"\n")
