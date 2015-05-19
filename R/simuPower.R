@@ -2,7 +2,7 @@
 ##plink returns G matrix as the mena variance of marker genotype. 
 ##if a subset of individual is selected, will eigenG work for a smaller number of individuals?
 ##only test the autosome SNPs
-simuPower=function(geno,SNPstart,SNPend,nsets=NULL,eigenG,var_e,kg=0,ks=0.2,kx=0,winsize=30,seed=1,nQTL=0,Xf,Xe,SKAT=T,Score=T,LR=F,alpha=0.05,saveAt=NULL,singleSNPtest=F,rewrite=F,GxE=T){
+simuPower=function(geno,SNPstart,SNPend,nsets=NULL,sets=NULL,eigenG,var_e,kg=0,ks=0.2,kx=0,winsize=30,seed=1,nQTL=0,Xf,Xe,SKAT=T,Score=T,LR=F,alpha=0.05,saveAt=NULL,singleSNPtest=F,rewrite=F,GxE=T){
   #geno:  matrix, or gds.class object, snps in columns and individual in rows.
   #SNPstart: start position of snp to be tested
   #SNPend: end position of snp to be tested
@@ -28,6 +28,7 @@ simuPower=function(geno,SNPstart,SNPend,nsets=NULL,eigenG,var_e,kg=0,ks=0.2,kx=0
   }
   }
   
+  
   cat(
       "#var_e=",var_e,"\n",
       "#kg=",kg,"\n",
@@ -43,11 +44,15 @@ simuPower=function(geno,SNPstart,SNPend,nsets=NULL,eigenG,var_e,kg=0,ks=0.2,kx=0
   p=SNPend-SNPstart+1
   N=nrow(eigenG$U1)
   tnsets=ceiling(p/winsize)
+  if(is.null(sets)){
   if(is.null(nsets)){
     nsets=tnsets
     sets=c(1:nsets)
   }else{
     sets=sample(1:tnsets,nsets,replace=F)
+  }
+  }else{
+  	nsets=length(sets)
   }
     
   if(nQTL>0){
@@ -73,6 +78,7 @@ simuPower=function(geno,SNPstart,SNPend,nsets=NULL,eigenG,var_e,kg=0,ks=0.2,kx=0
   
   for(i in 1:nsets) {
   	    seti=sets[i]
+  	    set.seed(seti)
   	    cat(i,"set:", seti,"\n")
   	   
     win.start=(seti-1)*winsize+SNPstart
@@ -105,6 +111,7 @@ simuPower=function(geno,SNPstart,SNPend,nsets=NULL,eigenG,var_e,kg=0,ks=0.2,kx=0
     if(LR==T){
       cat(out$p.LR,"\t",file=saveAt,append=T)
     }
+    cat("done window test\n")
     if(singleSNPtest==T){
     ##if marker is non-polymorphic, fixed effect will not work!!	
   	for(j in 1:win.count){
