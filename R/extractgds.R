@@ -18,3 +18,4 @@
        }
     return(snpgdsGetGeno(x,sample.id=sample.id,snp.id=snp.id))
 }
+
