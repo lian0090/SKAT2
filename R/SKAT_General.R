@@ -229,6 +229,9 @@ getEigenZd=function(Kd=NULL,Zd=NULL,precision=1e-5){
   out=list()
   if(!is.null(Kd) & !is.null(Zd)) stop("Only use one of Kd or Zd")
   if(!is.null(Zd)){
+  	if(any(is.na(Zd))){
+  		Zd=meanImpute(Zd)
+  	}
   	if(nrow(Zd)<=ncol(Zd)) {
   		Kd=tcrossprod(scale(Zd,T,F))
   	    eigenKd=eigen(Kd,symmetric=T)

@@ -1,7 +1,7 @@
-getSetsSNPStartEnd=function(winsize,SNPstart=NULL,SNPend=NULL,chr=NULL,uniqchr=NULL,nsets=NULL,sets=NULL,returnChr=F){
+getSetsSNPStartEnd=function(winsize,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NULL,sets=NULL){
 	##get sets Chr information
-	   if(is.null(uniqchr)|is.null(chr)){
-	   if(is.null(SNPstart)| is.null(SNPend)){stop("Must specify SNPstart and SNPend when chr and uniqchr not specified")}
+	   if(is.null(chr) | is.null(testchr)){
+	   if(is.null(SNPstart)| is.null(SNPend)){stop("Must specify SNPstart and SNPend when chr and testchr not specified")}
 	   nchr=1	
 	   totalSNP=SNPend-SNPstart+1
 	   totalSets=ceiling(totalSNP/winsize)
@@ -9,13 +9,13 @@ getSetsSNPStartEnd=function(winsize,SNPstart=NULL,SNPend=NULL,chr=NULL,uniqchr=N
 	   SNPChrEnd=totalSNP
 	   SetsChrStart=1
 	   }else{	
-	   nchr=length(uniqchr)
+	   nchr=length(testchr)
 	   SNPChrStart=SNPChrEnd=SetsChrStart=rep(0,nchr)
-	   uniqchr=sort(uniqchr)
+	   testchr=sort(testchr)
 	   SetsChrStart[1]=1
 	   totalSets=0
 	   for(i in 1:nchr){
-	   	chr.i=uniqchr[i]
+	   	chr.i=testchr[i]
 	   	whichchr=which(chr==chr.i)
 		SNPChrStart[i]=min(whichchr)
 	    p=length(whichchr)
@@ -43,12 +43,12 @@ getSetsSNPStartEnd=function(winsize,SNPstart=NULL,SNPend=NULL,chr=NULL,uniqchr=N
   	SetsSNPEnd[i]=min(SetsSNPStart[i]+winsize,SNPChrEnd[chr.set])
 	}
 	out=list(sets=sets,nsets=nsets,SetsSNPStart=SetsSNPStart,SetsSNPEnd=SetsSNPEnd)
-    if(returnChr==T){
-    	out$SetsChrStart=SetsChrStart
-    	out$SNPChrStart=SNPChrStart
-    	out$SNPChrEnd=SNPChrEnd
-    	out$totalSets=totalSets
-    }
+   
+   # 	out$SetsChrStart=SetsChrStart
+   # 	out$SNPChrStart=SNPChrStart
+   # 	out$SNPChrEnd=SNPChrEnd
+   # 	out$totalSets=totalSets
+    
     return(out)	    
   }
   
@@ -151,7 +151,7 @@ Get_CausalSNPs<-function(MAF, Causal.Ratio, Causal.MAF.Cutoff){
 ##plink returns G matrix as the mena variance of marker genotype. 
 ##if a subset of individual is selected, will eigenG work for a smaller number of individuals?
 ##only test the autosome SNPs
-simuPower=function(geno,SNPstart,SNPend,nsets=NULL,sets=NULL,eigenG,kg=0,ks=0.2,kx=0,winsize=30,seed=1,nQTL=0,Xf,Xe,SKAT=T,Score=T,LR=F,alpha=0.05,saveAt=NULL,singleSNPtest=F,rewrite=F,GxE=T,betaType=c("Normal","LogMAF","FixedMAF")[1],MAF=NULL,Causal.MAF.Cutoff=0.03){
+simuPower=function(geno,SNPstart,SNPend,chr=NULL,testchr=NULL,nsets=NULL,sets=NULL,eigenG,kg=0,ks=0.2,kx=0,winsize=30,seed=1,nQTL=0,Xf,Xe,SKAT=T,Score=T,LR=F,alpha=0.05,saveAt=NULL,singleSNPtest=F,rewrite=F,GxE=T,betaType=c("Normal","LogMAF","FixedMAF")[1],MAF=NULL,Causal.MAF.Cutoff=0.03){
   #geno:  matrix, or gds.class object, snps in columns and individual in rows.
   #SNPstart: start position of snp to be tested
   #SNPend: end position of snp to be tested
@@ -195,7 +195,7 @@ simuPower=function(geno,SNPstart,SNPend,nsets=NULL,sets=NULL,eigenG,kg=0,ks=0.2,
   
   N=nrow(eigenG$U1)
   
-  SetsSNPStartEnd=getSetsSNPStartEnd(winsize,p,chr=NULL,uniqchr=NULL,nsets=nsets)
+  SetsSNPStartEnd=getSetsSNPStartEnd(winsize,SNPstart=SNPstart,SNPend=SNPend,chr=chr,testchr=testchr,nsets=nsets,sets=sets)
   sets= SetsSNPStartEnd$sets
   nsets= SetsSNPStartEnd$nsets
  
