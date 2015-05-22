@@ -5,21 +5,7 @@ meanImpute=function(X){
 	return(X)
 	}
 	
-#Get columwise multiplication
-#if ncol(Z2)=p, there are p chunks of Z1*Z2[,j] 
-colmult=function(Z1,Z2){
-    #return Z3, Z3=(Z1*Z2[,1],Z1*Z2[,2],..Z1*Z2[,ncol(Z2)])
-    if(!is.matrix(Z1) | !is.matrix(Z2)){stop("columult arguments must be matrix ")}
-		p2=ncol(Z1)*ncol(Z2)
-	Z3=matrix(nrow=nrow(Z1),ncol=p2)
 
-	for(j in 1:ncol(Z2)){
-	for(i in c(1:ncol(Z1))){
-	Z3[,(j-1)*ncol(Z1)+i]=Z1[,i]*Z2[,j]	
-		}
-	}
-	return(Z3)
-	}	
 
 #calculate matrix trace
 tr=function(X){
