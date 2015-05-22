@@ -21,9 +21,10 @@ colmult=function(Z1,Z2){
 
 getSetsSNPID=function(snp.id,setsSNPnames){
 	##SetsSNPnames: a list of SNPnames for sets
-	nsets=length(sets)
+	setsSNPID=list()
+	nsets=length(setsSNPnames)
 	for(i in 1:nsets){
-		setsSNPID=which(snp.id%*%setsSNPnames)
+		setsSNPID[[i]]=which(snp.id%in%setsSNPnames[[i]])
 	}
        return(setsSNPID)	    
   }
