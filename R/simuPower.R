@@ -11,7 +11,7 @@ colmult=function(Z1,Z2){
 	for(i in c(1:ncol(Z1))){
 	col.ij=	(j-1)*ncol(Z1)+i
 	Z[,col.ij]=Z1[,i]*Z2[,j]	
-	colID.Z1	[col.ij]=i
+	colID.Z1[col.ij]=i
 	colID.Z2[col.ij]=j
 		}
 	}
@@ -185,7 +185,6 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
   #nQTL: number of major QTLs in the genetic background, defaul is 0
   #Xf: fixed effect (not included in GxE)
   #Xe: fixed effect (included for GxE) 
-  #alpha: test size
   #singleSNPtest: whether to get p-value by single SNP test
   
   ##begin subsetting populations
@@ -207,8 +206,8 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
       "#nsets=",nsets,"\n",
       "#winsize=", winsize,"\n",
       "#nQTL=",nQTL, "\n",
-      "#alpha=",alpha,"\n",
-      "#n.windowtest=",n.windowtest,"\n")
+      "#n.windowtest=",n.windowtest,"\n",
+      "#saveAt is ",saveAt,"\n")
   file.create(saveAt.Windowtest,F)
   file.create(saveAt.SingleSNPtest,F)
   file.create(saveAt.betaZs,F)
@@ -249,12 +248,12 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
     MAFi=MAF[setsSNPIDi]	
     Zs=simuBeta(Z=Zs,k=ks,Type=betaType,MAF=MAFi,Causal.MAF.Cutoff=Causal.MAF.Cutoff,MaxValue=1.6) 
     testID.Zs=Get_testSNPs(MAF=MAFi,openLowerTestMAF=openLowerTestMAF,openUpperTestMAF=openUpperTestMAF)
-    p.Zs=win.count
+    p.Zs=length(setsSNPIDi)
     p.testZs=length(testID.Zs)
     if(p.testZs>0){
     y=y0+Zs$u
     cat(Zs$beta[testID.Zs],"\n",file=saveAt.betaZs,append=T)
-
+    
     if (is.null (GxE)){
     ptm=proc.time()[3]	
     out=testZ(y=y,X=X,Zt=Zs$Z[,testID.Zs,drop=F],eigenZd=eigenG,SKAT=SKAT,Score=Score,LR=LR)		
