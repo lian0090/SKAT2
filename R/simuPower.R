@@ -237,9 +237,7 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
   if(singleSNPtest==T){
   	##fit P3D.NULL
   	tSNP.fit0=P3D.NULL(y0,X,eigenG)
-  }
-  
-  
+  }  
   for(i in 1:nsets) {
   	    set.seed(i)
   	    cat("set:", i,"\n")
@@ -247,13 +245,13 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
     Zs=geno[,setsSNPIDi]
     MAFi=MAF[setsSNPIDi]	
     Zs=simuBeta(Z=Zs,k=ks,Type=betaType,MAF=MAFi,Causal.MAF.Cutoff=Causal.MAF.Cutoff,MaxValue=1.6) 
+    cat(Zs$beta)
     testID.Zs=Get_testSNPs(MAF=MAFi,openLowerTestMAF=openLowerTestMAF,openUpperTestMAF=openUpperTestMAF)
     p.Zs=length(setsSNPIDi)
     p.testZs=length(testID.Zs)
+    cat(Zs$beta,"\n",file=saveAt.betaZs,append=T)
     if(p.testZs>0){
     y=y0+Zs$u
-    cat(Zs$beta[testID.Zs],"\n",file=saveAt.betaZs,append=T)
-    
     if (is.null (GxE)){
     ptm=proc.time()[3]	
     out=testZ(y=y,X=X,Zt=Zs$Z[,testID.Zs,drop=F],eigenZd=eigenG,SKAT=SKAT,Score=Score,LR=LR)		
@@ -279,7 +277,7 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
     }else{
     	stop("GxE Type is not correct")
     }
-    cat(Zx$beta[testID.Zx],"\n",file=saveAt.betaZx,append=T)
+    cat(Zx$beta,"\n",file=saveAt.betaZx,append=T)
     y=y+Zx$u
     ptm=proc.time()[3]
     out=testZ(y=y,X=X,W=Zs$Z[,testID.Zs,drop=F],kw=p.testZs,Zt=Zx$Z[,testID.Zx,drop=F],eigenZd=eigenG,SKAT=SKAT,Score=Score,LR=LR)
@@ -288,19 +286,20 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
     ptm2=proc.time()[3]
     if(SKAT==T){
       used.timeWindowtest=ptm2-ptm	
-      cat(out$p.SKAT$p.value,"\t",file=saveAt.Windowtest,append=T)
+      cat(out$p.SKAT$p.value," ",file=saveAt.Windowtest,append=T)
       cat(i,ncol(Zs$Z),"used.timeWindowtest:", used.timeWindowtest,"\n")
     }
     if(Score==T){
-      cat(out$p.Score,"\t",file=saveAt.Windowtest,append=T)
+      cat(out$p.Score," ",file=saveAt.Windowtest,append=T)
     }
     if(LR==T){
-      cat(out$p.LR,"\t",file=saveAt.Windowtest,append=T)
+      cat(out$p.LR," ",file=saveAt.Windowtest,append=T)
     }
     cat("done window test\n")
     if(singleSNPtest==T){
     ##if marker is non-polymorphic, fixed effect will not work!!	
-  	for(j in testID.Zs){
+  	for(j in 1:p.Zs){
+  	if (j %in% testID.Zs){
   	cat(setsSNPIDi[j],", ")	
   	Zsj=Zs$Z[,j,drop=F]
   	if(GxE==T){
@@ -314,7 +313,8 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
   	test=c(ncol(X)+c(1:ncol(Zsj)))	
   	p.value=singleSNP.P3D(y,cbind(X,Zsj),Var=tSNP.fit0,eigenG=eigenG,test=test)$p.value	
   	}
-  	cat(p.value,"\t",file=saveAt.SingleSNPtest,append=T)
+  	}else p.value=9
+  	cat(p.value," ",file=saveAt.SingleSNPtest,append=T)
   }
   cat("\n")
   ptm3=proc.time()[3]
@@ -326,12 +326,11 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
     cat("\n",file=saveAt.SingleSNPtest,append=T)
     
   }else{
-  	cat(NA,"\n",file=saveAt.Windowtest,append=T)
-  	cat(NA,"\n",file=saveAt.SingleSNPtest,append=T)
-  	cat(NA,"\n",file=saveAt.betaZx,append=T)
-  	cat(NA,"\n",file=saveAt.betaZx,append=T)
+  	cat(9,"\n",file=saveAt.Windowtest,append=T)
+  	cat(9,"\n",file=saveAt.SingleSNPtest,append=T)
+  	cat(9,"\n",file=saveAt.betaZx,append=T)
+  	cat(9,"\n",file=saveAt.betaZx,append=T)
   } 
   } 
-
 }
 
