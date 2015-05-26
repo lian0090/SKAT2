@@ -260,7 +260,7 @@ getEigenZd=function(Kd=NULL,Zd=NULL,precision=1e-5){
   return(out)
 }
 
-testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,SKAT=T,Score=F,LR=F,nperm=0,tU1X=NULL,tU1y=NULL,tXX=NULL,tXy=NULL,tyy=NULL,logVar=T){
+testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,windowtest,nperm=0,tU1X=NULL,tU1y=NULL,tXX=NULL,tXy=NULL,tyy=NULL,logVar=T){
   
   out=list()
   #Null model with no random effects
@@ -362,15 +362,15 @@ testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,SKAT=T,Score=F,LR=F,npe
     
   ##SKAT test or LR test
   
-  if(SKAT==T| Score==T){
+  if("SKAT" %in% windowtest | "Score" %in% windowtest){
     var_e=fit0$outVar$var_e
     taud=fit0$outVar$taud
     if(nw>0)tauw=fit0$outVar$tauw
-    getQ=SKAT
-    getS=Score
+    getQ=("SKAT" %in% windowtest)
+    getS= ("Score" %in% windowtest)
     Qdis=getDL(var_e,taud=taud,tauw=tauw,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,d1=d1,n=n,kw=kw,tU1W=tU1W,tXW=tXW,tWW=tWW,tWy=tWy,getQ=getQ,getS=getS,tZtZt=tZtZt,tU1Zt=tU1Zt,tXZt=tXZt,tyZt=tyZt,tWZt=tWZt)	
     
-    if(SKAT==T){
+    if("SKAT" %in% windowtest){
       Q=Qdis$Q
       lambda=Qdis$lambda
       
@@ -384,7 +384,7 @@ testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,SKAT=T,Score=F,LR=F,npe
       out$Q=Q
     }
     #Score test
-    if(Score==T){
+    if("Score" %in% windowtest){
       S=Qdis$S
       sdS=Qdis$sdS	
       out$Score=S
@@ -394,7 +394,7 @@ testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,SKAT=T,Score=F,LR=F,npe
     
   }
   #LR test only
-  if(LR==T){	
+  if("LR" %in% windowtest){	
     if(is.null(W)){
       tWZt=NULL
       kw_H1=ncol(Zt)
