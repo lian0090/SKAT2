@@ -90,7 +90,7 @@ simu_ug.QTL=function(SNPstart,SNPend,geno,nQTL,kg=1){
    return(ug)
   }
 simu_ug.eigenG=function(eigenG,kg=1){
-    	ug=eigenG$U1%*%rnorm(length(eigenG$d1),mean=0,sd=sqrt(kg/mean(eigenG$d1)))
+    	ug=eigenG$U1%*%rnorm(length(eigenG$d1),mean=0,sd=sqrt(kg^2/mean(eigenG$d1)))
     return(ug)
   }
 
@@ -175,12 +175,14 @@ simuBeta<-function(Z,k=NULL, Type="Normal", MAF=NULL,causalID=NULL,Causal.Ratio=
     Z_causal=Z[,causalID,drop=F]
     if(Type=="Normal"){
     ##if you change sumvar to meanvar, the relative performance of singleSNPtest and Score test might change	
-    sumvar=sum(apply(Z_causal,2,var))
-    beta_causal=abs(rnorm(ncol(Z_causal),0,sqrt(k/sumvar)))
+    #sumvar=sum(apply(Z_causal,2,var))
+    #beta_causal=abs(rnorm(ncol(Z_causal),0,sqrt(k/sumvar)))
+    beta_causal=abs(rnorm(ncol(Z_causal),0,k))
     	}
    if (Type=="Equal"){
-   	sumvar=sum(apply(Z_causal,2,var))
-   	beta_causal=rep(sqrt(k/sumvar),ncol(Z_causal))
+   	#sumvar=sum(apply(Z_causal,2,var))
+   	#beta_causal=rep(sqrt(k/sumvar),ncol(Z_causal))
+   	beta_causal=rep(k,ncol(Z_causal))
     		}
    if (Type=="LogMAF" | Type=="FixedMAF"){  				
     beta_causal=Get_BetaMAF(Type=Type,MAF=MAF[causalID],MaxValue=MaxValue)		
@@ -225,10 +227,11 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
   if(is.null(saveAt)){
     saveAt=paste("ks",ks,"kx",kx,sep="")
   }
-  saveAt.Windowtest=paste(saveAt,"_Windowtest",sep="")
-  saveAt.betaZs=paste(saveAt,"_betaZs",sep="")
-  saveAt.betaZx=paste(saveAt,"_betaZx",sep="")
-  saveAt.SingleSNPtest=paste(saveAt,"_SingleSNP_",c(singleSNPtest),sep="")
+ saveAt.Windowtest=file.path(saveAt,"Windowtest.dat")
+ saveAt.SingleSNPtest=file.path(saveAt,paste("SingleSNP_",singleSNPtest,".dat",sep=""))
+ saveAt.betaZs=file.path(saveAt,"betaZs.dat")
+ saveAt.betaZx=file.path(saveAt,"betaZx.dat")
+ if(!file.exists(saveAt))dir.create(saveAt,recursive=T)
 
   n.windowtest=length(windowtest)
   n.singleSNPtest=length(singleSNPtest)
@@ -336,7 +339,7 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
     if("SKAT" %in% windowtest){
       used.timeWindowtest=ptm2-ptm	
       cat(out$p.SKAT$p.value," ",file=saveAt.Windowtest,append=T)
-      cat(i,ncol(Zs$Z),"used.timeWindowtest:", used.timeWindowtest,"\n")
+      cat("used.timeWindowtest:", used.timeWindowtest,"\n")
     }
     if("Score" %in% windowtest){
       cat(out$p.Score," ",file=saveAt.Windowtest,append=T)
@@ -377,7 +380,7 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
   cat("\n")
   ptm3=proc.time()[3]
   used.timeSingleSNP=ptm3-ptm2
-  cat(i,"used.timeSingleSNP:",used.timeSingleSNP,"\n")
+  cat("used.timeSingleSNP:",used.timeSingleSNP,"\n")
  }
 
     for(k in 1:n.singleSNPtest){
@@ -394,10 +397,10 @@ out$p.singleSNP=vector("list",length(singleSNPtest))
 names(out$p.singleSNP)=singleSNPtest
 n.windowtest=length(windowtest)	
 n.singleSNPtest=length(singleSNPtest)
- saveAt.Windowtest=paste(saveAt,"_Windowtest",sep="")
- saveAt.SingleSNPtest=paste(saveAt,"_SingleSNP_",singleSNPtest,sep="")
- saveAt.betaZs=paste(saveAt,"_betaZs",sep="")
- saveAt.betaZx=paste(saveAt,"_betaZx",sep="")
+ saveAt.Windowtest=file.path(saveAt,"Windowtest.dat")
+ saveAt.SingleSNPtest=file.path(saveAt,paste("SingleSNP_",singleSNPtest,".dat",sep=""))
+ saveAt.betaZs=file.path(saveAt,"betaZs.dat")
+ saveAt.betaZx=file.path(saveAt,"betaZx.dat")
  readLinesListf=function(con,split="\\s+",na.strings = "9"){
  	dat=lapply(strsplit(readLines(con),split=split),function(a){a[which(a %in% na.strings)]=NA;a=as.numeric(a);return(a)})
  return(dat)
@@ -416,7 +419,7 @@ n.singleSNPtest=length(singleSNPtest)
 }
 
 
-getPower.singleSNP=function(p.singleSNP,whNon0,wh0){
+getPower.singleSNP=function(p.singleSNP,whNon0,wh0,alpha){
 	    n.0=length(which(wh0))
 	n.Non0=length(which(whNon0))
 	    out=rep(0,2)
@@ -438,7 +441,7 @@ getPower.singleSNP=function(p.singleSNP,whNon0,wh0){
     return(out)
    }
 
-getPower.window=function(p.window,wh0,whNon0){
+getPower.window=function(p.window,wh0,whNon0,alpha){
 	n.window=ncol(p.window)
 	n.0=length(which(wh0))
 	n.Non0=length(which(whNon0))
@@ -469,11 +472,11 @@ getPower=function(p.window,p.singleSNP,beta,alpha){
 	   whNon0=!wh0
 	   out=NULL
 	   namesout=NULL
-	   out1=getPower.window(p.window,wh0,whNon0)
+	   out1=getPower.window(p.window,wh0,whNon0,alpha)
 	   out=c(out,out1)
 	   namesout=c(namesout,names(out1))
        for(k in 1:n.singleSNP){
-       	outk=getPower.singleSNP(p.singleSNP[[k]],whNon0,wh0)
+       	outk=getPower.singleSNP(p.singleSNP[[k]],whNon0,wh0,alpha)
        	namesoutk=paste(names(outk),"_singleSNP_",names(p.singleSNP)[k],sep="")
         out=c(out,outk)
         namesout=c(namesout,namesoutk)  
