@@ -356,7 +356,6 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
   	Zsj=Zs$Z[,j,drop=F]
   	if(!is.null(GxE)){
   	col.Zxj=which(Zx.colID.Zs==j)
-  	
   	Zxj=Zx$Z[,col.Zxj,drop=F]
     #cat("col.Zs",j,"\n")
   	#cat(Zsj,"\n")
@@ -397,6 +396,7 @@ out$p.singleSNP=vector("list",length(singleSNPtest))
 names(out$p.singleSNP)=singleSNPtest
 n.windowtest=length(windowtest)	
 n.singleSNPtest=length(singleSNPtest)
+
  saveAt.Windowtest=file.path(saveAt,"Windowtest.dat")
  saveAt.SingleSNPtest=file.path(saveAt,paste("SingleSNP_",singleSNPtest,".dat",sep=""))
  saveAt.betaZs=file.path(saveAt,"betaZs.dat")
@@ -429,9 +429,11 @@ getPower.singleSNP=function(p.singleSNP,whNon0,wh0,alpha){
 	    if(length(whNon0.singleSNP)>0){
 	p.singleSNP.power=sapply(p.singleSNP[whNon0.singleSNP],function(a) min(a,na.rm=T)*length(na.omit(a)))	
     power.singleSNP=length(which(na.omit(unlist(p.singleSNP.power))<alpha))/n.Non0
+   # cat("n.Non0",n.Non0,"\n")
     out[1]=power.singleSNP 
 	}	  
    if(length(wh0.singleSNP)>0){
+   	    cat("n.0",n.0,"\n")
     #bonferroni correction
     p.singleSNP.size=sapply(p.singleSNP[wh0.singleSNP],function(a) min(a,na.rm=T)*length(na.omit(a)))
     size.singleSNP=length(which(na.omit(unlist(p.singleSNP.size))<alpha))/n.0
@@ -466,8 +468,20 @@ getPower.window=function(p.window,wh0,whNon0,alpha){
 }
 
 getPower=function(p.window,p.singleSNP,beta,alpha){
-		n.window=ncol(p.window)
-		n.singleSNP=length(p.singleSNP)
+	   n.singleSNP=length(p.singleSNP)
+		nobs.window=nrow(p.window)
+		nobs.singleSNP=min(sapply(p.singleSNP,length))
+		nobs.beta=length(beta)
+		nobs.min=min(c(nobs.window,nobs.singleSNP,nobs.beta))
+		if(nobs.min < nobs.window){
+			p.window=p.window[1:nobs.min,]
+		}
+		if(nobs.min < nobs.singleSNP){
+			p.singleSNP=lapply(p.singleSNP,function(a) return(a[1:nobs.min]))
+		}
+		if(nobs.min < nobs.beta){
+			beta=beta[1:nobs.min]
+		}
 	   wh0=sapply(beta,function(a)all(a==0))
 	   whNon0=!wh0
 	   out=NULL
