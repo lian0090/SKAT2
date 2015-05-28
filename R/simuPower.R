@@ -82,11 +82,11 @@ function(winsize,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NULL){
   
 
   
-simu_ug.QTL=function(SNPstart,SNPend,geno,nQTL,kg=1){
+simu_ug.QTL=function(SNPstart,SNPend,geno,nQTL,kg=1,Sign){
   
     bcQTLs=sample(SNPstart:SNPend,nQTL)    
     Zg=geno[,bcQTLs]
-    ug=simuBeta(Z=Zg,k=kg,Type="Normal")$u  	 
+    ug=simuBeta(Z=Zg,k=kg,Type="Normal",Sign=Sign)$u  	 
    return(ug)
   }
 simu_ug.eigenG=function(eigenG,kg=1){
@@ -262,7 +262,7 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
   nsets=length(setsSNPID)
   
   if(nQTL>0){
-  	ug=simu_ug.QTL(SNPstart,SNPend,geno,nQTL,kg=kg)
+  	ug=simu_ug.QTL(SNPstart,SNPend,geno,nQTL,kg=kg,Sign=Sign)
   	}else{
   	ug=simu_ug.eigenG(eigenG,kg=kg)	
   	}  
@@ -283,7 +283,7 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
   	    setsSNPIDi=setsSNPID[[i]]
     Zs=geno[,setsSNPIDi]
     MAFi=MAF[setsSNPIDi]
-    Zs=simuBeta(Z=Zs,k=ks,Type=betaType,MAF=MAFi,Causal.MAF.Cutoff=Causal.MAF.Cutoff,MaxValue=1.6) 
+    Zs=simuBeta(Z=Zs,k=ks,Type=betaType,MAF=MAFi,Causal.MAF.Cutoff=Causal.MAF.Cutoff,MaxValue=1.6,Sign=Sign) 
     if(betaType %in% c("LogMAF","FixedMAF")){
     	testID.Zs=Get_testSNPsMAF(MAF=MAFi,openLowerTestMAF=openLowerTestMAF,openUpperTestMAF=openUpperTestMAF)
     	}else{
@@ -320,7 +320,7 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
     testID.Zx=which(Zx.colID.Zs %in% testID.Zs)
     p.testZx=length(testID.Zx)
     if(GxE %in% c("Normal","LogMAF","FixedMAF","Equal")){
-    Zx=simuBeta(Z=Zx,k=kx,Type=GxE,MAF=MAFi[Zx.colID.Zs],causalID=causalID.Zx,MaxValue=0.8)	
+    Zx=simuBeta(Z=Zx,k=kx,Type=GxE,MAF=MAFi[Zx.colID.Zs],causalID=causalID.Zx,MaxValue=0.8,Sign=Sign)	
     
     } else if(GxE == "Multiply"){
     Zx=list(Z=scale(Zx,T,F))
