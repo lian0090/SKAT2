@@ -433,7 +433,6 @@ getPower.singleSNP=function(p.singleSNP,whNon0,wh0,alpha){
     out[1]=power.singleSNP 
 	}	  
    if(length(wh0.singleSNP)>0){
-   	    cat("n.0",n.0,"\n")
     #bonferroni correction
     p.singleSNP.size=sapply(p.singleSNP[wh0.singleSNP],function(a) min(a,na.rm=T)*length(na.omit(a)))
     size.singleSNP=length(which(na.omit(unlist(p.singleSNP.size))<alpha))/n.0
@@ -460,10 +459,11 @@ getPower.window=function(p.window,wh0,whNon0,alpha){
 	#bonferroni correction
     if(length(wh0.window)>0){
     size.window=apply(p.window[wh0.window,,drop=F],2,function(a)length(which(a<alpha))/n.0) 
-    out[(n.window+1):2*n.window]=size.window
+    out[(n.window+1):(2*n.window)]=size.window
     }
     namesout=c(namesout,paste("size_",colnames(p.window),sep=""))
     names(out)=namesout
+    cat(out,"\n")
     return(out)
 }
 
