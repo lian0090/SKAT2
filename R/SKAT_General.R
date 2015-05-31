@@ -261,11 +261,14 @@ getEigenZd=function(Kd=NULL,Zd=NULL,precision=1e-5){
 }
 
 testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,windowtest,nperm=0,tU1X=NULL,tU1y=NULL,tXX=NULL,tXy=NULL,tyy=NULL,logVar=T){
-  
+  if(any(is.na(y))){
+  	#optim function will report not being able to evalue function at intial values when there is NA
+  	stop("there should be no missing values")
+  	}
   out=list()
   #Null model with no random effects
   #classical SKAT test
-  
+  if(!is.null(windowtest)){
   if(is.null(eigenZd)){
   mod=lm(y~-1+X)
   resid=residuals(mod)
@@ -280,6 +283,7 @@ testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,windowtest,nperm=0,tU1X
 	lambda<-lambda1[IDX2]
 	out$p.SKAT<-Get_PValue.Lambda(lambda, Q)   
   	return(out)
+  }
   }
   
   #logVar, paramterize variance components with log when using REML to restrict variance component to be larger than 0.
@@ -309,7 +313,7 @@ testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,windowtest,nperm=0,tU1X
     tXW=crossprod(X,W)
     tWW=crossprod(W,W)
     tWy=crossprod(W,y)
-    tWZt=crossprod(W,Zt)
+    if(!is.null(windowtest)){tWZt=crossprod(W,Zt)}else{tWZt=NULL}
   }else {
     nw=0
     tauw=NULL
@@ -320,11 +324,14 @@ testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,windowtest,nperm=0,tU1X
     tWZt=NULL
   }
   
+  if(!is.null(windowtest)){
   tU1Zt=crossprod(U1,Zt)
   tZty=crossprod(Zt,y)
   tyZt=t(tZty)
   tXZt=crossprod(X,Zt)
-  tZtZt=crossprod(Zt,Zt)
+  tZtZt=crossprod(Zt,Zt)	
+  }
+  
   ##test with low rank Zh	
   namesPar=c("var_e","taud")
   if(nw>0){
