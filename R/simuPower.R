@@ -364,11 +364,15 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
    #####start single SNP test
     if(!is.null(singleSNPtest)){
     ##if marker is non-polymorphic, fixed effect will not work!!	
-   if(is.null(GxE)){
+   pmt.Me1=proc.time()[3]
+      if(is.null(GxE)){
    	 Me=Meff(Zs$Z[,testID.Zs,drop=F])
    	 }else{
    	 Me=Meff(Zx$Z[,testID.Zx,drop=F])	
    	 }
+   pmt.Me2=proc.time()[3]
+   cat("used.time calculating Me:",pmt.Me2-pmt.Me1,"\n")
+   
     
   	for(j in 1:p.Zs){
   	if (j %in% testID.Zs){
@@ -446,14 +450,14 @@ getPower.singleSNP=function(p.singleSNP,whNon0,wh0,alpha){
 		whNon0.singleSNP=which(whNon0 & whnotNA.singleSNP)
 	    wh0.singleSNP=which(wh0 & whnotNA.singleSNP)
 	    if(length(whNon0.singleSNP)>0){
-	p.singleSNP.power=sapply(p.singleSNP[whNon0.singleSNP],function(a) min(a,na.rm=T)*length(na.omit(a)))	
+	p.singleSNP.power=sapply(p.singleSNP[whNon0.singleSNP],function(a) min(a,na.rm=T))	
     power.singleSNP=length(which(na.omit(unlist(p.singleSNP.power))<alpha))/n.Non0
    # cat("n.Non0",n.Non0,"\n")
     out[1]=power.singleSNP 
 	}	  
    if(length(wh0.singleSNP)>0){
     #bonferroni correction
-    p.singleSNP.size=sapply(p.singleSNP[wh0.singleSNP],function(a) min(a,na.rm=T)*length(na.omit(a)))
+    p.singleSNP.size=sapply(p.singleSNP[wh0.singleSNP],function(a) min(a,na.rm=T))
     size.singleSNP=length(which(na.omit(unlist(p.singleSNP.size))<alpha))/n.0
     out[2]=size.singleSNP 
     }
@@ -487,7 +491,7 @@ getPower.window=function(p.window,wh0,whNon0,alpha){
 }
 
 getPower=function(p.window,p.singleSNP,beta,alpha){
-	   n.singleSNP=length(p.singleSNP)
+	 n.singleSNP=length(p.singleSNP)
 		nobs.window=nrow(p.window)
 		nobs.singleSNP=min(sapply(p.singleSNP,length))
 		nobs.beta=length(beta)
