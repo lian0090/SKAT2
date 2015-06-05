@@ -277,6 +277,7 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
   	##fit P3D.NULL
   	tSNP.fit0=P3D.NULL(y0,X,eigenG)
   }  
+  ##begin testing each window
   for(i in 1:nsets) {
   	    set.seed(i)
   	    cat("set:", i,"\n")
@@ -306,10 +307,8 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
     }
     if(p.testZs>0){
     y=y0+Zs$u
-    if (is.null (GxE)){
-    ptm=proc.time()[3]	
-    out=testZ(y=y,X=X,Zt=Zs$Z[,testID.Zs,drop=F],eigenZd=eigenG,windowtest=windowtest)		
-    }else{
+    ###simulate GxE
+    if (!is.null (GxE)){
     	#GxE
     Zx=colmult(Xe,Zs$Z)
     Zx.colID.Xe=Zx$colID.Z1
@@ -332,10 +331,20 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
     }
     cat(Zx$beta,"\n",file=saveAt.betaZx,append=T)
     y=y+Zx$u
+   }#end simulating GxE
+   
+   
+   #####start windowtest
+    if(!is.null(windowtest)){
+    	if(is.null(GxE)){
+    ptm=proc.time()[3]	
+    out=testZ(y=y,X=X,Zt=Zs$Z[,testID.Zs,drop=F],eigenZd=eigenG,windowtest=windowtest)		
+    	}else{
     ptm=proc.time()[3]
     out=testZ(y=y,X=X,W=Zs$Z[,testID.Zs,drop=F],kw=p.testZs,Zt=Zx$Z[,testID.Zx,drop=F],eigenZd=eigenG,windowtest=windowtest)
-    }
+    	}
     ptm2=proc.time()[3]
+    
     if("SKAT" %in% windowtest){
       used.timeWindowtest=ptm2-ptm	
       cat(out$p.SKAT$p.value," ",file=saveAt.Windowtest,append=T)
@@ -348,8 +357,19 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
       cat(out$p.LR," ",file=saveAt.Windowtest,append=T)
     }
     cat("done window test\n")
+	
+    }
+   #####end windowtest
+   
+   #####start single SNP test
     if(!is.null(singleSNPtest)){
     ##if marker is non-polymorphic, fixed effect will not work!!	
+   if(is.null(GxE)){
+   	 Me=Meff(Zs$Z[,testID.Zs,drop=F])
+   	 }else{
+   	 Me=Meff(Zx$Z[,testID.Zx,drop=F])	
+   	 }
+    
   	for(j in 1:p.Zs){
   	if (j %in% testID.Zs){
   	#cat(setsSNPIDi[j],", ")	
@@ -363,19 +383,18 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
   	#cat(Zxj,"\n")
   	nZxj=ncol(Zxj)	
   	test=c((ncol(X)+ncol(Zsj))+(1:nZxj))
-  	p.value=try(singleSNP.P3D(y,cbind(X,Zsj,Zxj),Var=tSNP.fit0,eigenG=eigenG,test=test,method=singleSNPtest)$p.value,silent=F)
-  	if(inherits(p.value, "try-error")){
-  		p.value=rep(9,n.singleSNPtest)
-  		}
+  	p.value=singleSNP.P3D(y,cbind(X,Zsj,Zxj),Var=tSNP.fit0,eigenG=eigenG,test=test,method=singleSNPtest,Me=Me)$p.value
   	}else{
   	test=c(ncol(X)+c(1:ncol(Zsj)))	
-  	p.value=singleSNP.P3D(y,cbind(X,Zsj),Var=tSNP.fit0,eigenG=eigenG,test=test,method=singleSNPtest)$p.value	
+  	p.value=singleSNP.P3D(y,cbind(X,Zsj),Var=tSNP.fit0,eigenG=eigenG,test=test,method=singleSNPtest,Me=Me)$p.value	
   	}
-  	}else p.value=rep(9,n.singleSNPtest)
+    }else p.value=rep(9,n.singleSNPtest)
+    
   	for(k in 1:n.singleSNPtest){
   	cat(p.value[k]," ",file=saveAt.SingleSNPtest[k],append=T)
   	}
   }
+  cat("Me",Me,"\n")
   cat("\n")
   ptm3=proc.time()[3]
   used.timeSingleSNP=ptm3-ptm2

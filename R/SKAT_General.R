@@ -1,7 +1,9 @@
 fit.optim=function(par,fn,logVar=T,tauRel=NULL, ...){
 	namesPar=names(par)
 if(is.null(namesPar)){stop("par must have names")}
-  fit<-optim(par=par,fn=fn,logVar=logVar,tauRel=tauRel, ...)
+  #fit<-optim(par=par,fn=fn,logVar=logVar,tauRel=tauRel, ...)
+  #The default fitting algorithm in lmer function
+  fit<-bobyqa(par=par,fn=fn,logVar=logVar,tauRel=tauRel, ...) 
   names(fit$par)=namesPar
   Var=fit$par
   Var=get_tau(Var,logVar,tauRel)
@@ -206,13 +208,13 @@ neg2Log=function(Var,tU1y,tU1X,tXX,tXy,tyy,d1,n,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=
     Vgamma=terms$Vgamma
     Cgamma=terms$Cgamma	
     tW_Vd_ehat=tWVdy-t(tXVdW)%*%hat_alpha	
-    logDetVgamma=log(det(Vgamma))	
+    logDetVgamma=determinant(Vgamma,logarithm=T)$modulus
     neg2logLik1=logDetVd+logDetVgamma
     tehat_Vd_W_Cgamma_tW_Vd_ehat=t(tW_Vd_ehat)%*%Cgamma%*%tW_Vd_ehat
     neg2logLik3=tehat_Vd_ehat-tehat_Vd_W_Cgamma_tW_Vd_ehat
   } 	
   
-  neg2logLik2=log(det(tXVinvX))
+  neg2logLik2=determinant(tXVinvX,logarithm=T)$modulus
  if(REML==T){
    out<- sum(neg2logLik1,neg2logLik2,neg2logLik3)
    #compatible with emma

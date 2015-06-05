@@ -6,6 +6,23 @@ meanImpute=function(X){
 	}
 	
 
+Meff=function(X){
+	#X is the incidence matrix for the variables to be tested
+	if(ncol(X)==1){return(1)}
+	corX=cor(X)
+	lambda=eigen(corX,only.values=T)$values
+	return(Meff.lambda(lambda))
+}
+
+Meff.lambda=function(lambda){
+	##round lambda first, so that if the floor will work correctly in the case of numerical precision. 
+	#for example: a=rnorm(100);b=a+1;d=a+3;eigen(cor(cbind(a,b,d))...
+	lambda=round(lambda,digits=4)
+	x1=as.numeric(lambda>=1)+(lambda-floor(lambda))
+	return(sum(x1))
+	}
+
+
 
 #calculate matrix trace
 tr=function(X){
