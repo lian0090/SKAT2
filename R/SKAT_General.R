@@ -263,7 +263,7 @@ getEigenZd=function(Kd=NULL,Zd=NULL,precision=1e-5){
 }
 
 #A wrapper for testZ
-testWindow=function(y,X,eigenG,Zt,W=NULL,removeZtFromG=T){
+testWindow=function(y,X,eigenG,Zt,W=NULL,removeZtFromG=F){
 	
 	#W should be a list of all other incidence matrix for random effects 
 	#eigenG is produced by eigenZd
