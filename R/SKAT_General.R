@@ -262,11 +262,28 @@ getEigenZd=function(Kd=NULL,Zd=NULL,precision=1e-5){
   return(out)
 }
 
-testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,windowtest,nperm=0,tU1X=NULL,tU1y=NULL,tXX=NULL,tXy=NULL,tyy=NULL,logVar=T){
+#A wrapper for testZ
+testWindow=function(y,X,eigenG,Zt,W=NULL,removeZtFromG=T){
+	
+	#W should be a list of all other incidence matrix for random effects 
+	#eigenG is produced by eigenZd
+	if(removeZtFromG==T){
+	W=c(W,list(Zt))
+	nw=length(W)
+	out=testZ(y,X,eigenZd=eigenG,Zt=Zt,W=W,tauRel=paste("tauw",nw,"=-taud",sep=""),windowtest=c("Score","SKAT"))
+	}else{
+		
+	out=testZ(y,X,eigenZd=eigenG,Zt=Zt,W=W,tauRel=NULL,windowtest=c("Score","SKAT"))	
+	}
+	return(out)
+}
+
+testZ=function(y,X,W=NULL,tauRel=NULL,Zt,eigenZd,windowtest,nperm=0,tU1X=NULL,tU1y=NULL,tXX=NULL,tXy=NULL,tyy=NULL,logVar=T){
   if(any(is.na(y))){
   	#optim function will report not being able to evalue function at intial values when there is NA
   	stop("there should be no missing values")
   	}
+  	
   out=list()
   #Null model with no random effects
   #classical SKAT test
@@ -307,8 +324,10 @@ testZ=function(y,X,W=NULL,kw=NULL,tauRel=NULL,Zt,eigenZd,windowtest,nperm=0,tU1X
   }
   
   if(!is.null(W)){
-    if(is.null(kw))stop("kw must be speficied for W")
-    nw=length(kw)
+  	if(!is.list(W)){stop("W must be a list of all other random effect incidence matrix")}
+   kw=sapply(W,ncol)
+   nw=length(kw)
+   W=do.call(cbind,W)
     if(sum(kw)!=ncol(W))stop("sum of kw should be equal to the number of columns in W")
     tauw=rep(0,nw)
     tU1W=crossprod(U1,W)
