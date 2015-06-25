@@ -33,7 +33,10 @@ tr=function(X){
 
 #get loglikelihood for Var
 getLoglik=function(Var,y,X,W=NULL,kw=NULL,eigenZd,logVar,tauRel=NULL,REML=T){
-if(is.null(names(Var))){stop("Var must have names")}	
+if(is.null(names(Var))){stop("Var must have names")}
+if(any(!gsub("\\d*","",names(Var)) %in% c("var_e","taud","tauw"))){
+  stop("Var names must be var_e, taud, or tauwD")
+}
 n=length(y)
 U1=eigenZd$U1
 d1=eigenZd$d1
