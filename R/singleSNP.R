@@ -25,8 +25,20 @@ singleSNP.P3D=function(y,X0,Xt,Var,eigenG,method="LR"){
  #Xt: incidence matrix for the marker or for the GxE  to be tested	
  #Var: population variance components: var_e and var_g 
  #methods: "t" for t-test, "LR" for likelihood ratio test, default is likelihood ratio test
+    
     X0=as.matrix(X0)
     Xt=as.matrix(Xt)
+  if(any(is.na(y))){
+  	#optim function will report not being able to evalue function at intial values when there is NA
+  	#stop("there should be no missing values")
+	whNA=which(is.na(y))
+	y=y[-whNA]
+	X0=X0[-whNA,,drop=F]
+	Xt=Xt[-whNA,,drop=F]
+    eigenG$U1=eigenG$U1[-whNA,]
+  	}
+    
+   
     X=cbind(X0,Xt)
     names(Var)=c("var_e","taud")
     out=list()

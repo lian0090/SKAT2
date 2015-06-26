@@ -221,7 +221,6 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
   #Xe: fixed effect (included for GxE) 
   #windowtest
   #singleSNPtest: LR, t-test, or NULL
-  results=list()
   ##begin subsetting populations
   set.seed(seed)
   if(is.null(saveAt)){
@@ -260,6 +259,11 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
     setsSNPID=getSetsSNPID.StartEnd(winsize,SNPstart=SNPstart,SNPend=SNPend,chr=chr,testchr=testchr,nsets=nsets)
   }
   nsets=length(setsSNPID)
+  nSNPs=sum(sapply(setsSNPID,length))
+  #store results:should keep the initial values NA, so that for the markers not tested, this is still NA
+  pvalue.window=matrix(NA,n.windowtest,nSNPs)
+  pvalue.SingleSNP=matrix(NA,n.singleSNPtest,nSNPs)
+ 
   
   if(nQTL>0){
     ug=simu_ug.QTL(SNPstart,SNPend,geno,nQTL,kg=kg,Sign=Sign)
@@ -279,6 +283,7 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
   # 	tSNP.fit0=P3D.NULL(y0,X,eigenG)
   # }  
   ##begin simulating each window
+  setStarti=1
   for(i in 1:nsets) {
     set.seed(i)
     cat("set:", i,"\n")
@@ -323,7 +328,11 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
         testID.Zx=which(Zx.colID.Zs %in% testID.Zs)
         p.testZx=length(testID.Zx)
       }
+    setCount=p.Zx #number of single tests in a window
+    }else{
+    	setCount=p.Zs
     }
+    	    
     #end simulating GxE
     
     ##do test for each window
@@ -332,7 +341,7 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
     if(p.testZs==0){
       #this should be changed, if Zs is not tested, this does not mean it is not causal.  
       cat(rep(NA,n.windowtest),"\n",file=saveAt.Windowtest,append=T)	
-      if(!is.null(GxE)){
+           if(!is.null(GxE)){
         for(k in 1:n.singleSNPtest) {cat(rep(NA,p.Zs*ncol(Xe)),"\n",file=saveAt.SingleSNPtest[k],append=T)}
       }
       else{
@@ -342,27 +351,30 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
     
     
     if(p.testZs>0){
-      #####start windowtest
+      #####start windowtest (always output both Score and SKAT test)
       if(!is.null(windowtest)){
         if(is.null(GxE)){
           ptm=proc.time()[3]	
-          out=testWindow(y,X=X,Zt=Zs$Z[,testID.Zs,drop=F],,eigenG=eigenG,removeZtFromG=removeZtFromG)
-        }else{
+          out=testWindow(y,X=X,Zt=Zs$Z[,testID.Zs,drop=F],eigenG=eigenG,removeZtFromG=removeZtFromG)
+               }else{
           ptm=proc.time()[3]
-          out=testWindow(y,X=X,W=list(Zs$Z[,testID.Zs,drop=F]),Zt=Zx$Z[,testID.Zx,drop=F],eigenG=eigenG,removeZtFromG=removeZtFromG)
+          ##For GxE, you should not removeZtFromG, because when you remove the interaction matrix from G, you also removed the incidence
+          #matrix for the fixed effects. The p-value in this case is 0. But I do not know why the p-value should be 0.
+          out=testWindow(y,X=X,W=list(Zs$Z[,testID.Zs,drop=F]),Zt=Zx$Z[,testID.Zx,drop=F],eigenG=eigenG,removeZtFromG=F)
         }
         ptm2=proc.time()[3]
         
-        if("SKAT" %in% windowtest){
-          used.timeWindowtest=ptm2-ptm	
-          results$p.SKAT=out$p.SKAT$p.value
-          cat(out$p.SKAT$p.value," ",file=saveAt.Windowtest,append=T)
-          cat("used.timeWindowtest:", used.timeWindowtest,"\n")
-        }
-        if("Score" %in% windowtest){
-          cat(out$p.Score," ",file=saveAt.Windowtest,append=T)
-          results$p.Score=out$p.Score
-          
+        used.timeWindowtest=ptm2-ptm	
+        cat("used.timeWindowtest:", used.timeWindowtest,"\n")
+        for(wi in 1:n.windowtest){
+        	if(windowtest[wi]=="SKAT"){
+        			pvalue.window.wi=out$p.SKAT$p.value
+        	}
+        	if(windowtest[wi]=="Score"){
+        			pvalue.window.wi=out$p.Score
+        	}
+          cat(pvalue.window.wi," ",file=saveAt.Windowtest,append=T)  
+          pvalue.window[wi,setStarti:(setStarti+setCount-1)]=pvalue.window.wi
         }
           cat("done window test\n")
         
@@ -374,7 +386,6 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
         
         tSNP.fit0=P3D.NULL(y,X0=X,eigenG)
         
-        
         ##if marker is non-polymorphic, fixed effect will not work!!	
         pmt.Me1=proc.time()[3]
         if(is.null(GxE)){
@@ -385,7 +396,6 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
         pmt.Me2=proc.time()[3]
         cat("used.time calculating Me:",pmt.Me2-pmt.Me1,"\n")
         
-        out$p.singleSNPtest=matrix(0,nrow=k,ncol=p.Zs)
         for(j in 1:p.Zs){
           if (j %in% testID.Zs){
             #cat(setsSNPIDi[j],", ")	
@@ -405,11 +415,11 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
               p.value=singleSNP.P3D(y,X0=X,Xt=Zsj,Var=tSNP.fit0,eigenG=eigenG,method=singleSNPtest)$p.value *Me	
             }
           }else p.value=rep(NA,n.singleSNPtest)
-         
-          out$p.singleSNPtest[,j]=p.value
           
           for(k in 1:n.singleSNPtest){
             cat(p.value[k]," ",file=saveAt.SingleSNPtest[k],append=T)
+            pvalue.SingleSNP[k,setStarti+j-1]=p.value[k]
+            
           }
         }
         cat("Me",Me,"\n")
@@ -423,8 +433,15 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
         cat("\n",file=saveAt.SingleSNPtest[k],append=T)
       }
     }
-    
+    ##update setStarti
+    if(is.null(GxE)){
+     	setStarti=setStarti+p.Zs
+     	}else{
+     setStarti=setStarti+p.Zx
+     }
   } 
+  results=list(pvalue.SingleSNP=pvalue.SingleSNP,pvalue.window=pvalue.window)
+return(results)
 }
 
 get_results=function(saveAt,windowtest,singleSNPtest,na.strings="NA"){

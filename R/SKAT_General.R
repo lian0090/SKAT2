@@ -275,8 +275,7 @@ getEigenZd=function(Kd=NULL,Zd=NULL,precision=1e-5){
 #A wrapper for testZ
 testWindow=function(y,X,Zt,eigenG=NULL,W=NULL,removeZtFromG=F,optimizer='bobyqa'){
 	##optimizing functions for solving variance components with REML. Either "bobyqa" or "optim",default is 'bobyqa', 
-	
-	#W should be a list of all other incidence matrix for random effects 
+		#W should be a list of all other incidence matrix for random effects 
 	#eigenG is produced by eigenZd
 	if(removeZtFromG==T){
 	W=c(W,list(Zt))
@@ -289,13 +288,33 @@ testWindow=function(y,X,Zt,eigenG=NULL,W=NULL,removeZtFromG=F,optimizer='bobyqa'
 	return(out)
 }
 
+
+
+      	
+
+
 testZ=function(y,X,W=NULL,tauRel=NULL,Zt,eigenZd,windowtest,nperm=0,tU1X=NULL,tU1y=NULL,tXX=NULL,tXy=NULL,tyy=NULL,logVar=T,optimizer="bobyqa"){
+	
+    #check input
+    X=as.matrix(X)
+	Zt=as.matrix(Zt)
   if(any(is.na(y))){
   	#optim function will report not being able to evalue function at intial values when there is NA
-  	stop("there should be no missing values")
-  	}
-  	
-  out=list()
+  	if((!is.null(tU1X))|(!is.null(tU1y))|!is.null(tXX)|(!is.null(tXy))|(!is.null(tyy))){
+  		stop("there should be no missing values when tU1X, tU1y, tXX, tXy or tyy is supplied")
+  		}
+	whNAy=which(is.na(y))
+	y=y[-whNAy]
+	X=X[-whNAy,,drop=F]
+	Zt=Zt[-whNAy,,drop=F]
+    eigenZd$U1=eigenZd$U1[-whNAy,]
+      	}else{
+      		whNAy=NULL
+      	}
+
+ 	
+	
+	  out=list()
   #Null model with no random effects
   #classical SKAT test
   if(!is.null(windowtest)){
@@ -336,11 +355,14 @@ testZ=function(y,X,W=NULL,tauRel=NULL,Zt,eigenZd,windowtest,nperm=0,tU1X=NULL,tU
   }
   
   if(!is.null(W)){
+  	
   	if(!is.list(W)){stop("W must be a list of all other random effect incidence matrix")}
    kw=sapply(W,ncol)
    nw=length(kw)
    W=do.call(cbind,W)
     if(sum(kw)!=ncol(W))stop("sum of kw should be equal to the number of columns in W")
+   #remove NA values
+   if(length(whNAy)>0){W=W[-whNAy,,drop=F]} 
     tauw=rep(0,nw)
     tU1W=crossprod(U1,W)
     tXW=crossprod(X,W)
