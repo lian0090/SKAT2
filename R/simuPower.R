@@ -273,10 +273,11 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
   e=rnorm(N,0,1)
   y0=X%*%beta_x+ug+e
  
-  if(!is.null(singleSNPtest)){
-  	##fit P3D.NULL
-  	tSNP.fit0=P3D.NULL(y0,X,eigenG)
-  }  
+ #commented out on June 25,2015. P3D.NULL should fit the true phenotypes instead of y0
+ # if(!is.null(singleSNPtest)){
+ # 	##fit P3D.NULL
+ # 	tSNP.fit0=P3D.NULL(y0,X,eigenG)
+ # }  
   ##begin testing each window
   for(i in 1:nsets) {
   	    set.seed(i)
@@ -295,14 +296,14 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
     cat(Zs$beta,"\n",file=saveAt.betaZs,append=T)
     
     if(p.testZs==0){
-    cat(rep(9,n.windowtest),"\n",file=saveAt.Windowtest,append=T)	
+    cat(rep(NA,n.windowtest),"\n",file=saveAt.Windowtest,append=T)	
     if(!is.null(GxE)){
     	Zxbeta=rep(0,p.Zs*ncol(Xe))
     	cat(Zxbeta,"\n",file=saveAt.betaZx,append=T)
-        for(k in 1:n.singleSNPtest) {cat(rep(9,p.Zs*ncol(Xe)),"\n",file=saveAt.SingleSNPtest[k],append=T)}
+        for(k in 1:n.singleSNPtest) {cat(rep(NA,p.Zs*ncol(Xe)),"\n",file=saveAt.SingleSNPtest[k],append=T)}
     }
     else{
-  	for(k in 1:n.singleSNPtest){cat(rep(9,p.Zs),"\n",file=saveAt.SingleSNPtest[k],append=T)}
+  	for(k in 1:n.singleSNPtest){cat(rep(NA,p.Zs),"\n",file=saveAt.SingleSNPtest[k],append=T)}
   	}
     }
     if(p.testZs>0){
@@ -363,6 +364,10 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
    
    #####start single SNP test
     if(!is.null(singleSNPtest)){
+   
+  	tSNP.fit0=P3D.NULL(y,X0=X,eigenG)
+ 
+    	
     ##if marker is non-polymorphic, fixed effect will not work!!	
    pmt.Me1=proc.time()[3]
       if(is.null(GxE)){
@@ -387,12 +392,12 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
   	#cat(Zxj,"\n")
   	nZxj=ncol(Zxj)	
   	test=c((ncol(X)+ncol(Zsj))+(1:nZxj))
-  	p.value=singleSNP.P3D(y,cbind(X,Zsj,Zxj),Var=tSNP.fit0,eigenG=eigenG,test=test,method=singleSNPtest,Me=Me)$p.value
+  	p.value=singleSNP.P3D(y,X0=cbind(X,Zsj),Xt=Zxj,Var=tSNP.fit0,eigenG=eigenG,method=singleSNPtest)$p.value *Me
   	}else{
   	test=c(ncol(X)+c(1:ncol(Zsj)))	
-  	p.value=singleSNP.P3D(y,cbind(X,Zsj),Var=tSNP.fit0,eigenG=eigenG,test=test,method=singleSNPtest,Me=Me)$p.value	
+  	p.value=singleSNP.P3D(y,X0=X,Xt=Zsj,Var=tSNP.fit0,eigenG=eigenG,method=singleSNPtest)$p.value *Me	
   	}
-    }else p.value=rep(9,n.singleSNPtest)
+    }else p.value=rep(NA,n.singleSNPtest)
     
   	for(k in 1:n.singleSNPtest){
   	cat(p.value[k]," ",file=saveAt.SingleSNPtest[k],append=T)
@@ -413,7 +418,7 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
   } 
 }
 
-get_results=function(saveAt,windowtest,singleSNPtest){
+get_results=function(saveAt,windowtest,singleSNPtest,na.strings="NA"){
 	out=list()
 out$p.singleSNP=vector("list",length(singleSNPtest))
 names(out$p.singleSNP)=singleSNPtest
@@ -424,12 +429,15 @@ n.singleSNPtest=length(singleSNPtest)
  saveAt.SingleSNPtest=file.path(saveAt,paste("SingleSNP_",singleSNPtest,".dat",sep=""))
  saveAt.betaZs=file.path(saveAt,"betaZs.dat")
  saveAt.betaZx=file.path(saveAt,"betaZx.dat")
- readLinesListf=function(con,split="\\s+",na.strings = "9"){
- 	dat=lapply(strsplit(readLines(con),split=split),function(a){a[which(a %in% na.strings)]=NA;a=as.numeric(a);return(a)})
+ readLinesListf=function(con,split="\\s+",na.strings = na.strings){
+ 	dat=lapply(strsplit(readLines(con),split=split),function(a){
+ 		a[which(a %in% na.strings)]=NA;
+ 		a=as.numeric(a);
+ 		return(a)
+ 		})
  return(dat)
  }
- p.window=scan(saveAt.Windowtest,comment="#")
- p.window[which(p.window==9)]=NA
+ p.window=scan(saveAt.Windowtest,comment="#",na.strings=na.strings)
  out$p.window=matrix(p.window,ncol=n.windowtest,byrow=T)
  colnames(out$p.window)=windowtest
  for(i in 1:n.singleSNPtest){

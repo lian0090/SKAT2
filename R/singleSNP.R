@@ -2,7 +2,9 @@
 #It is not exactly the same as that from emma, due to the small difference in estimating variance components. 
 #If I use the same variance component from emma to put into getDL, I will get exactly the same pvalue 
 #Population structure previously determined. 
-P3D.NULL=function(y,X,eigenG){
+P3D.NULL=function(y,X0,eigenG){
+	#X0: fixed effects not being tested
+	X=as.matrix(X0)
 	n=length(y)
 	U1=eigenG$U1
 	d1=eigenG$d1
@@ -14,18 +16,23 @@ P3D.NULL=function(y,X,eigenG){
     Var=c(0.5,0.5)
     names(Var)=c("var_e","taud")
 	fit0<-fit.optim(par=Var,fn=neg2Log,logVar=T,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,d1=d1,n=n)
-	return(fit0$par)
+	Var=fit0$par
+	names(Var)=c("var_e","var_g")
+	return(Var)
 }
-singleSNP.P3D=function(y,X,Var,eigenG,test=NULL,method=c("LR","t")[1],Me=1){
- #Var: population variance components: var_e and taud on the original scale
- #fit NULL model without SNP and SNP GxE effet	
- #test: which fixed effect to be tested. The default is to test the last one of fixed effect\
-    
+singleSNP.P3D=function(y,X0,Xt,Var,eigenG,method="LR"){
+ #X0: incidence matrix for fixed effects not being tested
+ #Xt: incidence matrix for the marker or for the GxE  to be tested	
+ #Var: population variance components: var_e and var_g 
+ #methods: "t" for t-test, "LR" for likelihood ratio test, default is likelihood ratio test
+    X0=as.matrix(X0)
+    Xt=as.matrix(Xt)
+    X=cbind(X0,Xt)
+    names(Var)=c("var_e","taud")
     out=list()
  	n.beta=ncol(X)		
-	if(is.null(test)){
- 	test=n.beta	
- 	}
+ 	test=c((ncol(X0)+1):n.beta)	
+ 	
  	if(length(test)>1){
  		if("t" %in% method){
  			stop("use LR test when there is more than one fix effect to be tested")
@@ -38,10 +45,10 @@ singleSNP.P3D=function(y,X,Var,eigenG,test=NULL,method=c("LR","t")[1],Me=1){
  		
  	if("LR" == method[i]){
  		trypvalue=try({
- 		ln0=getLoglik(Var=Var,y,X=X[,setdiff((1:ncol(X)),test)],eigenZd=eigenG,logVar=F,REML=F)
+ 		ln0=getLoglik(Var=Var,y,X=X0,eigenZd=eigenG,logVar=F,REML=F)
  	 	ln1=getLoglik(Var=Var,y,X=X,eigenZd=eigenG,logVar=F,REML=F)
  	 	Q=-2*(ln0-ln1)
- 	 	p.value=pchisq(Q,df=length(test),lower.tail=F)*Me
+ 	 	p.value=pchisq(Q,df=length(test),lower.tail=F)
  	 	out$ML1=ln1
  	 	out$ML0=ln0
  	 	out$LR=Q
@@ -63,17 +70,36 @@ singleSNP.P3D=function(y,X,Var,eigenG,test=NULL,method=c("LR","t")[1],Me=1){
  	vbeta=solve(outDL$tXVinvX)
  	tscore=beta[test]/sqrt(vbeta[test,test])
  	##note: the df for t-distribution is not corrected by Satterthwaite's method. Likelihood ratio test should be better.
- 	p.value=2*pt(tscore,df=n-n.beta,lower.tail=F)*Me
+ 	p.value=2*pt(tscore,df=n-n.beta,lower.tail=F)
  	})
  	}
    
    if(inherits(trypvalue, "try-error")){
-  		p.value=9
+  		p.value=NA
   		}	
  	 out$p.value[i]=p.value
  	 }	
     return(out)
  }
+ ##perform association mapping for provided markers while correcting for multiple test.
+ GWAS.P3D=function(y,X0,Xt,Var,eigenG,multipleCorrection=T){
+ 	   	 Xt=as.matrix(Xt)
+ 	   	 X0=as.matrix(X0)
+ 	   	 if(multipleCorrection==T){
+ 	   	 	Me=Meff(Xt)
+ 	   	 	cat("effetive number of test is ",Me,"\n")
+ 	   	 	}else{
+ 	   	 		Me=1
+ 	   	 	}
+ 	   	 p.value=rep(NA,ncol(Xt))
+ 	   	 for(i in 1:ncol(Xt)){
+ 	   	 p.value[i]=singleSNP.P3D(y,X0=X0,Xt=Xt[,i],Var=Var,eigenG=eigenG,method="LR")$p.value*Me
+ 	   	 }
+ 	   	 
+ 	   	 return(p.value)
+ 	   	}
+
+ 	
  
  ###population parameter re-estimated for each marker
  singleSNP=function(y,X,eigenG){

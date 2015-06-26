@@ -1,9 +1,20 @@
-fit.optim=function(par,fn,logVar=T,tauRel=NULL, ...){
+fit.optim=function(par,fn,logVar=T,tauRel=NULL, optimizer="bobyqa",...){
 	namesPar=names(par)
 if(is.null(namesPar)){stop("par must have names")}
-  #fit<-optim(par=par,fn=fn,logVar=logVar,tauRel=tauRel, ...)
+  if(optimizer=="optim"){
+  fit<-optim(par=par,fn=fn,logVar=logVar,tauRel=tauRel, ...)
+  }
   #The default fitting algorithm in lmer function
-  fit<-bobyqa(par=par,fn=fn,logVar=logVar,tauRel=tauRel, ...) 
+  #
+  if(optimizer=="bobyqa"){
+  tmpfit<-bobyqa(par=par,fn=fn,logVar=logVar,tauRel=tauRel, ...) 
+  fit=list()
+  fit$par=tmpfit$par
+  fit$value=tmpfit$fval
+  fit$counts=tmpfit$feval
+  fit$convergence=tmpfit$ierr
+  fit$message=tmpfit$msg
+  }
   names(fit$par)=namesPar
   Var=fit$par
   Var=get_tau(Var,logVar,tauRel)
@@ -15,7 +26,6 @@ if(is.null(namesPar)){stop("par must have names")}
   fit$loglik=-1/2*fit$value
   if(logVar==T){fit$par=exp(fit$par)}
   return(fit)
-
 
 }
 
@@ -263,22 +273,23 @@ getEigenZd=function(Kd=NULL,Zd=NULL,precision=1e-5){
 }
 
 #A wrapper for testZ
-testWindow=function(y,X,Zt,eigenG=NULL,W=NULL,removeZtFromG=F){
+testWindow=function(y,X,Zt,eigenG=NULL,W=NULL,removeZtFromG=F,optimizer='bobyqa'){
+	##optimizing functions for solving variance components with REML. Either "bobyqa" or "optim",default is 'bobyqa', 
 	
 	#W should be a list of all other incidence matrix for random effects 
 	#eigenG is produced by eigenZd
 	if(removeZtFromG==T){
 	W=c(W,list(Zt))
 	nw=length(W)
-	out=testZ(y,X,eigenZd=eigenG,Zt=Zt,W=W,tauRel=paste("tauw",nw,"=-taud",sep=""),windowtest=c("Score","SKAT"))
+	out=testZ(y,X,eigenZd=eigenG,Zt=Zt,W=W,tauRel=paste("tauw",nw,"=-taud",sep=""),windowtest=c("Score","SKAT"),optimizer=optimizer)
 	}else{
 		
-	out=testZ(y,X,eigenZd=eigenG,Zt=Zt,W=W,tauRel=NULL,windowtest=c("Score","SKAT"))	
+	out=testZ(y,X,eigenZd=eigenG,Zt=Zt,W=W,tauRel=NULL,windowtest=c("Score","SKAT"),optimizer=optimizer)	
 	}
 	return(out)
 }
 
-testZ=function(y,X,W=NULL,tauRel=NULL,Zt,eigenZd,windowtest,nperm=0,tU1X=NULL,tU1y=NULL,tXX=NULL,tXy=NULL,tyy=NULL,logVar=T){
+testZ=function(y,X,W=NULL,tauRel=NULL,Zt,eigenZd,windowtest,nperm=0,tU1X=NULL,tU1y=NULL,tXX=NULL,tXy=NULL,tyy=NULL,logVar=T,optimizer="bobyqa"){
   if(any(is.na(y))){
   	#optim function will report not being able to evalue function at intial values when there is NA
   	stop("there should be no missing values")
@@ -301,6 +312,7 @@ testZ=function(y,X,W=NULL,tauRel=NULL,Zt,eigenZd,windowtest,nperm=0,tU1X=NULL,tU
 	IDX2<-which(lambda1 > mean(lambda1[IDX1])/100000)
 	lambda<-lambda1[IDX2]
 	out$p.SKAT<-Get_PValue.Lambda(lambda, Q)   
+	out$p.Score=NA
   	return(out)
   }
   }
@@ -385,7 +397,8 @@ testZ=function(y,X,W=NULL,tauRel=NULL,Zt,eigenZd,windowtest,nperm=0,tU1X=NULL,tU
   	}
   par=rep(0.5,length(namesPar))
   names(par)=namesPar	
-  fit0=fit.optim(par=par,fn=neg2Log,logVar=logVar,d1=d1,n=n,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tU1W=tU1W,tXW=tXW,tWW=tWW,tWy=tWy,kw=kw,tauRel=tauRel)
+ 
+  fit0=fit.optim(par=par,fn=neg2Log,logVar=logVar,d1=d1,n=n,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tU1W=tU1W,tXW=tXW,tWW=tWW,tWy=tWy,kw=kw,tauRel=tauRel,optimizer=optimizer)
   out$fit0=fit0
     
   ##SKAT test or LR test
@@ -441,7 +454,7 @@ testZ=function(y,X,W=NULL,tauRel=NULL,Zt,eigenZd,windowtest,nperm=0,tU1X=NULL,tU
     namesPar_H1=c(namesPar,paste("tauw",nw+1,sep=""))
     parH1=rep(0.5,length(namesPar_H1))
     names(parH1)=namesPar_H1
-    fit1<-fit.optim(par=parH1,fn=neg2Log,logVar=logVar,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tU1W=tU1W_H1,tXW=tXW_H1,tWW=tWW_H1,tWy=tWy_H1,d1=d1,n=n,kw=kw_H1,tauRel=tauRel)
+    fit1<-fit.optim(par=parH1,fn=neg2Log,logVar=logVar,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tU1W=tU1W_H1,tXW=tXW_H1,tWW=tWW_H1,tWy=tWy_H1,d1=d1,n=n,kw=kw_H1,tauRel=tauRel,optimizer=optimizer)
     neg2_log0=fit0$value
     neg2_log1=fit1$value
     LR=neg2_log0-neg2_log1

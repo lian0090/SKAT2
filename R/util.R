@@ -7,6 +7,7 @@ meanImpute=function(X){
 	
 
 Meff=function(X){
+	X=as.matrix(X)
 	#X is the incidence matrix for the variables to be tested
 	if(ncol(X)==1){return(1)}
 	corX=cor(X)
