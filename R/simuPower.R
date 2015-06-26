@@ -349,7 +349,7 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
           out=testZ(y=y,X=X,Zt=Zs$Z[,testID.Zs,drop=F],eigenZd=eigenG,windowtest=windowtest)		
         }else{
           ptm=proc.time()[3]
-          out=testZ(y=y,X=X,W=Zs$Z[,testID.Zs,drop=F],kw=p.testZs,Zt=Zx$Z[,testID.Zx,drop=F],eigenZd=eigenG,windowtest=windowtest)
+          out=testZ(y=y,X=X,W=list(Zs$Z[,testID.Zs,drop=F]),Zt=Zx$Z[,testID.Zx,drop=F],eigenZd=eigenG,windowtest=windowtest)
         }
         ptm2=proc.time()[3]
         
