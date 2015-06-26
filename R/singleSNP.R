@@ -96,7 +96,7 @@ singleSNP.P3D=function(y,X0,Xt,Var,eigenG,method="LR"){
  	   	 p.value[i]=singleSNP.P3D(y,X0=X0,Xt=Xt[,i],Var=Var,eigenG=eigenG,method="LR")$p.value*Me
  	   	 }
  	   	 
- 	   	 return(p.value)
+ 	   	 return(list(Me=Me,p.value=p.value))
  	   	}
 
  	

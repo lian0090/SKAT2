@@ -158,7 +158,7 @@ Get_testSNPsMAF<-function(MAF,openLowerTestMAF=0,openUpperTestMAF=NULL){
 
 
 ##MinMAF: minimum MAF frequency allowed for test. If MAF<MinMAF,this marker is not included in association test
-simuBeta<-function(Z,k=NULL, Type="Normal", MAF=NULL,causalID=NULL,Causal.Ratio=1,Causal.MAF.Cutoff=0.03,Sign=0,MaxValue=1.6,scaleZ=F)
+simuBeta<-function(Z,k=NULL, Type="Normal", MAF=NULL,causalID=NULL,Causal.Ratio=1,Causal.MAF.Cutoff=0.03,Sign=0,MaxValue=1.6,scaleZ=T)
 {
 	if(!(Type %in% c("Normal","LogMAF","FixedMAF","Equal"))){
 		stop("simuBeta: Type must be in Normal, LogMAF, FixedMAF, Equal")
@@ -278,7 +278,7 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
  # 	##fit P3D.NULL
  # 	tSNP.fit0=P3D.NULL(y0,X,eigenG)
  # }  
-  ##begin testing each window
+  ##begin simulating each window
   for(i in 1:nsets) {
   	    set.seed(i)
   	    cat("set:", i,"\n")
@@ -296,6 +296,7 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
     cat(Zs$beta,"\n",file=saveAt.betaZs,append=T)
     
     if(p.testZs==0){
+    #this should be changed, if Zs is not tested, this does not mean it is not causal.	
     cat(rep(NA,n.windowtest),"\n",file=saveAt.Windowtest,append=T)	
     if(!is.null(GxE)){
     	Zxbeta=rep(0,p.Zs*ncol(Xe))
