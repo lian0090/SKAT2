@@ -221,7 +221,7 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
   #Xe: fixed effect (included for GxE) 
   #windowtest
   #singleSNPtest: LR, t-test, or NULL
-  
+  results=list()
   ##begin subsetting populations
   set.seed(seed)
   if(is.null(saveAt)){
@@ -355,11 +355,14 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
         
         if("SKAT" %in% windowtest){
           used.timeWindowtest=ptm2-ptm	
+          results$p.SKAT=out$p.SKAT$p.value
           cat(out$p.SKAT$p.value," ",file=saveAt.Windowtest,append=T)
           cat("used.timeWindowtest:", used.timeWindowtest,"\n")
         }
         if("Score" %in% windowtest){
           cat(out$p.Score," ",file=saveAt.Windowtest,append=T)
+          results$p.Score=out$p.Score
+          
         }
           cat("done window test\n")
         
@@ -382,7 +385,7 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
         pmt.Me2=proc.time()[3]
         cat("used.time calculating Me:",pmt.Me2-pmt.Me1,"\n")
         
-        
+        out$p.singleSNPtest=matrix(0,nrow=k,ncol=p.Zs)
         for(j in 1:p.Zs){
           if (j %in% testID.Zs){
             #cat(setsSNPIDi[j],", ")	
@@ -402,6 +405,8 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
               p.value=singleSNP.P3D(y,X0=X,Xt=Zsj,Var=tSNP.fit0,eigenG=eigenG,method=singleSNPtest)$p.value *Me	
             }
           }else p.value=rep(NA,n.singleSNPtest)
+         
+          out$p.singleSNPtest[,j]=p.value
           
           for(k in 1:n.singleSNPtest){
             cat(p.value[k]," ",file=saveAt.SingleSNPtest[k],append=T)
