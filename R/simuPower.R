@@ -209,7 +209,7 @@ simuBeta<-function(Z,k=NULL, Type="Normal", MAF=NULL,causalID=NULL,Causal.Ratio=
 ##plink returns G matrix as the mena variance of marker genotype. 
 ##if a subset of individual is selected, will eigenG work for a smaller number of individuals?
 ##only test the autosome SNPs
-simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NULL,setsSNPID=NULL,eigenG,kg=1,ks=0.2,kx=0.1,winsize=20,seed=1,nQTL=0,Xf,Xe,windowtest=c("SKAT","Score","LR",NULL)[1],saveAt=NULL,singleSNPtest=c("LR","t")[1],GxE=c("Normal","LogMAF","FixedMAF","Multiply","Equal")[4],betaType=c("Normal","LogMAF","FixedMAF","Equal")[1],MAF=NULL,Causal.MAF.Cutoff=0.03,openLowerTestMAF=NULL,openUpperTestMAF=NULL,Sign=0,removeZtFromG=T){
+simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NULL,setsSNPID=NULL,eigenG,kg=1,ks=0.2,kx=0.1,winsize=20,seed=1,nQTL=0,Xf,Xe,windowtest=c("SKAT","Score",NULL)[1],saveAt=NULL,singleSNPtest=c("LR","t")[1],GxE=c("Normal","LogMAF","FixedMAF","Multiply","Equal")[4],betaType=c("Normal","LogMAF","FixedMAF","Equal")[1],MAF=NULL,Causal.MAF.Cutoff=0.03,openLowerTestMAF=NULL,openUpperTestMAF=NULL,Sign=0,removeZtFromG=T){
   #geno:  matrix, or gds.class object, snps in columns and individual in rows.
   #SNPstart: start position of snp to be tested
   #SNPend: end position of snp to be tested
