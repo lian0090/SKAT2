@@ -475,7 +475,7 @@ get_results=function(saveAt,windowtest,singleSNPtest,na.strings="NA"){
   }
   out$beta.Zs=readLinesListf(saveAt.betaZs)
   out$beta.Zx=readLinesListf(saveAt.betaZx)
-  saveRDS(out,file="power.rds")  
+  saveRDS(out,file=file.path(saveAt,"power.rds"))  
   return(out)
 }
 
