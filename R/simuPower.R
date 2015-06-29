@@ -30,6 +30,8 @@ getSetsSNPID<-
     return(setsSNPID)	    
   }
 
+
+##return the index for snps in each sets
 getSetsSNPID.StartEnd<-
   function(winsize,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NULL){
     ##get sets Chr information
@@ -214,6 +216,7 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
   #SNPstart: start position of snp to be tested
   #SNPend: end position of snp to be tested
   #nsets: number of sets for simulation
+  #setsSNPID: A list of integer index for SNPs in each sets.
   #eigenG: eigen decoposition for G matrix
   #winsize: windowsize 
   #nQTL: number of major QTLs in the genetic background, defaul is 0
@@ -256,6 +259,7 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
   N=nrow(eigenG$U1)
   
   if(is.null(setsSNPID)){
+  	#get the index of SNPs in each sets
     setsSNPID=getSetsSNPID.StartEnd(winsize,SNPstart=SNPstart,SNPend=SNPend,chr=chr,testchr=testchr,nsets=nsets)
   }
   nsets=length(setsSNPID)
@@ -471,7 +475,7 @@ get_results=function(saveAt,windowtest,singleSNPtest,na.strings="NA"){
   }
   out$beta.Zs=readLinesListf(saveAt.betaZs)
   out$beta.Zx=readLinesListf(saveAt.betaZx)
-  
+  saveRDS(out,file="power.rds")  
   return(out)
 }
 
