@@ -445,6 +445,7 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
      }
   } 
   results=list(pvalue.SingleSNP=pvalue.SingleSNP,pvalue.window=pvalue.window)
+    saveRDS(results,file=file.path(saveAt,"power.rds"))  
 return(results)
 }
 
@@ -475,7 +476,6 @@ get_results=function(saveAt,windowtest,singleSNPtest,na.strings="NA"){
   }
   out$beta.Zs=readLinesListf(saveAt.betaZs)
   out$beta.Zx=readLinesListf(saveAt.betaZx)
-  saveRDS(out,file=file.path(saveAt,"power.rds"))  
   return(out)
 }
 
