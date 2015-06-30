@@ -4,6 +4,14 @@
 #Population structure previously determined. 
 P3D.NULL=function(y,X0,eigenG){
 	#X0: fixed effects not being tested
+	 if(any(is.na(y))){
+  	#optim function will report not being able to evalue function at intial values when there is NA
+  	#stop("there should be no missing values")
+	whNA=which(is.na(y))
+	y=y[-whNA]
+	X0=X0[-whNA,,drop=F]
+    eigenG$U1=eigenG$U1[-whNA,]
+  	}
 	X=as.matrix(X0)
 	n=length(y)
 	U1=eigenG$U1
