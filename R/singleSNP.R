@@ -28,12 +28,9 @@ P3D.NULL=function(y,X0,eigenG){
 	names(Var)=c("var_e","var_g")
 	return(Var)
 }
-singleSNP.P3D=function(y,X0,Xt,Var,eigenG,method="LR"){
- #X0: incidence matrix for fixed effects not being tested
- #Xt: incidence matrix for the marker or for the GxE  to be tested	
- #Var: population variance components: var_e and var_g 
- #methods: "t" for t-test, "LR" for likelihood ratio test, default is likelihood ratio test
-    
+
+singleSNP=function(y,X0,Xt,Var=NULL,eigenG,method="LR",P3D=T,lm0=NULL){
+	##Var is the variance for the NULL model, without fitting the test SNPs 
     X0=as.matrix(X0)
     Xt=as.matrix(Xt)
   if(any(is.na(y))){
@@ -43,12 +40,11 @@ singleSNP.P3D=function(y,X0,Xt,Var,eigenG,method="LR"){
 	y=y[-whNA]
 	X0=X0[-whNA,,drop=F]
 	Xt=Xt[-whNA,,drop=F]
-    eigenG$U1=eigenG$U1[-whNA,]
+   if(!is.null(eigenG)) {
+   	eigenG$U1=eigenG$U1[-whNA,]
+   	}
   	}
-    
-   
-    X=cbind(X0,Xt)
-    names(Var)=c("var_e","taud")
+  	X=cbind(X0,Xt)
     out=list()
  	n.beta=ncol(X)		
  	test=c((ncol(X0)+1):n.beta)	
@@ -58,49 +54,97 @@ singleSNP.P3D=function(y,X0,Xt,Var,eigenG,method="LR"){
  			stop("use LR test when there is more than one fix effect to be tested")
  		}
  	}
- 	#use LR test if length.test>1
  	out$p.value=rep(0,length(method))
  	names(out$p.value)=method
- 	for(i in 1:length(method)){
- 		
+    
+    ##Method for not fitting genetic background
+    if(is.null(eigenG)){
+    	if("LR" %in% method){
+    		if(is.null(lm0)){
+    	  warning("it is better to supply lm0 when not fitting genetic background and using LR test ")
+    	  lm0=lm(y~-1+X0) 
+    	   }    	
+    	}
+    	lm1=lm(y~-1+X)
+    	
+    	for(i in 1:length(method)){
+    		if(method[i]=="LR"){
+    			Q=-2*(logLik(lm0)-logLik(lm1))
+    			out$p.value[i]=pchisq(Q,df=length(test),lower.tail=F)
+    		}
+    		if(method[i]=="t"){
+    			out$p.value[i]=summary(lm1)$coefficients[n.beta,4]
+    		}
+   	
+    	}
+    	
+    }
+    ##end methods for NULL eigenG
+    
+    ##Methods for fitting genetic background
+    if(!is.null(eigenG)){
+    #Var for NULL model
+    
+		if(is.null(Var)){
+			if(P3D==T | "LR" %in% method){
+		stop("must supply Var for NULL model if P3D is true or if using LR mothod")	
+		}
+		}else{
+			names(Var)=c("var_e","taud")
+		}
+		if(P3D==T){
+			Var1=Var
+		}else{
+	Var1=P3D.NULL(y,X0=X,eigenG)
+	names(Var1)=c("var_e","taud")
+		}
+		   	
+	for(i in 1:length(method)){
  	if("LR" == method[i]){
  		trypvalue=try({
  		ln0=getLoglik(Var=Var,y,X=X0,eigenZd=eigenG,logVar=F,REML=F)
- 	 	ln1=getLoglik(Var=Var,y,X=X,eigenZd=eigenG,logVar=F,REML=F)
+ 	 	ln1=getLoglik(Var=Var1,y,X=X,eigenZd=eigenG,logVar=F,REML=F)
  	 	Q=-2*(ln0-ln1)
  	 	p.value=pchisq(Q,df=length(test),lower.tail=F)
  	 	out$ML1=ln1
  	 	out$ML0=ln0
  	 	out$LR=Q
+ 	 	out$Var=Var
+ 	 	out$Var1=Var1
  	 	})
  	 	}else if ("t" == method[i]){
- 	n=length(y)
-	U1=eigenG$U1
-	d1=eigenG$d1
-	tXX=crossprod(X)
-	tU1y=crossprod(U1,y)
- 	tU1X=crossprod(U1,X)
- 	tXy=crossprod(X,y)
- 	tyy=sum(y^2)
- 	var_e=Var[1]
- 	taud=Var[2]
- 	trypvalue=try({
- 	outDL=getDL(var_e=var_e,taud=taud,d1=d1,n=n,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,get.tU1ehat=F)
- 	beta=outDL$hat_alpha
- 	vbeta=solve(outDL$tXVinvX)
- 	tscore=beta[test]/sqrt(vbeta[test,test])
- 	##note: the df for t-distribution is not corrected by Satterthwaite's method. Likelihood ratio test should be better.
- 	p.value=2*pt(tscore,df=n-n.beta,lower.tail=F)
+ 	 	trypvalue=try({
+ 	    outDL=outDL=getDL.XYZ(var_e=Var1[1],taud=Var1[2],eigenZd=eigenG,X=X,y=y)
+ 	    beta=outDL$hat_alpha
+ 	    vbeta=solve(outDL$tXVinvX)
+ 	   tscore=abs(beta[test])/sqrt(vbeta[test,test])
+ 	  ##note: the df for t-distribution is not corrected by Satterthwaite's method. Likelihood ratio test should be better.
+ 	   p.value=2*pt(tscore,df=n-n.beta,lower.tail=F)
  	})
  	}
-   
    if(inherits(trypvalue, "try-error")){
   		p.value=NA
   		}	
  	 out$p.value[i]=p.value
- 	 }	
+ 	}		
+ 	}
+ 	
+    return(out)
+}
+
+
+##backward compatability
+singleSNP.P3D=function(y,X0,Xt,Var,eigenG,method="LR"){
+ #X0: incidence matrix for fixed effects not being tested
+ #Xt: incidence matrix for the marker or for the GxE  to be tested	
+ #Var: population variance components: var_e and var_g 
+ #methods: "t" for t-test, "LR" for likelihood ratio test, default is likelihood ratio test
+ 	#use LR test if length.test>1
+ 	out=singleSNP(y=y,X0=X0,Xt=Xt,Var=Var,eigenG=eigenG,method=method)
     return(out)
  }
+
+
  ##perform association mapping for provided markers while correcting for multiple test.
  GWAS.P3D=function(y,X0,Xt,Var,eigenG,multipleCorrection=T){
  	   	 Xt=as.matrix(Xt)
@@ -120,26 +164,3 @@ singleSNP.P3D=function(y,X0,Xt,Var,eigenG,method="LR"){
 
  	
  
- ###population parameter re-estimated for each marker
- singleSNP=function(y,X,eigenG){
- 	n=length(y)
-	U1=eigenG$U1
-	d1=eigenG$d1
-	tXX=crossprod(X)
-	tU1y=crossprod(U1,y)
- 	tU1X=crossprod(U1,X)
- 	tXy=crossprod(X,y)
- 	tyy=sum(y^2)
-    Var=c(0.5,0.5)
-    names(Var)=c("var_e","taud")
-	fit0<-fit.optim(par=Var,fn=neg2Log,logVar=T,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,d1=d1,n=n)
-	Var=fit0$par
-    outDL=getDL(var_e=Var[1],taud=Var[2],d1=d1,n=n,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,get.tU1ehat=F)
- 	beta=outDL$hat_alpha
- 	vbeta=solve(outDL$tXVinvX)
- 	n.beta=length(beta)
- 	tscore=beta[n.beta]/sqrt(vbeta[n.beta,n.beta])
- 	##note: the df for t-distribution is not corrected by Satterthwaite's method. Likelihood ratio test should be better.
- 	p.value=2*pt(tscore,df=n-n.beta,lower.tail=F)
-    return(p.value)
- }
