@@ -15,6 +15,9 @@ if(is.null(namesPar)){stop("par must have names")}
   fit$convergence=tmpfit$ierr
   fit$message=tmpfit$msg
   }
+  if(is.na(fit$value)){
+  stop("objective function returned NA, please check input values")
+  }
   names(fit$par)=namesPar
   Var=fit$par
   Var=get_tau(Var,logVar,tauRel)
