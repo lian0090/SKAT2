@@ -68,7 +68,7 @@ if(is.null(namesPar)){stop("par must have names")}
   Var=list(var_e=var_e,taud=taud,tauw=tauw)
   return(Var)
   }
-
+#should get another getDL function, so that I can directly put X, y, W as input
 getDL=function(var_e,taud,d1,n,tU1y,tU1X,tXX=NULL,tXy=NULL,tyy=NULL,tauw=NULL,kw=NULL,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=NULL,getQ=F,getS=F,get.tU1ehat=T,tZtZt=NULL,tU1Zt=NULL,tXZt=NULL,tyZt=NULL,tWZt=NULL,get_tSNP=F){
   out=list()
   kd=length(d1)
