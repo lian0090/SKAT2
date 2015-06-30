@@ -107,16 +107,15 @@ singleSNP.P3D=function(y,X0,Xt,Var,eigenG,method="LR"){
  	   	 X0=as.matrix(X0)
  	   	 if(multipleCorrection==T){
  	   	 	Me=Meff(Xt)
- 	   	 	cat("effetive number of test is ",Me,"\n")
+ 	   	 	cat("effective number of test is ",Me,"\n")
  	   	 	}else{
  	   	 		Me=1
  	   	 	}
  	   	 p.value=rep(NA,ncol(Xt))
- 	   	 for(i in 1:ncol(Xt)){
- 	   	 p.value[i]=singleSNP.P3D(y,X0=X0,Xt=Xt[,i],Var=Var,eigenG=eigenG,method="LR")$p.value*Me
- 	   	 }
- 	   	 
- 	   	 return(list(Me=Me,p.value=p.value))
+       	 
+ 	   	 p.value=apply(Xt,2,function(a){singleSNP.P3D(y,X0=X0,Xt=a,Var=Var,eigenG=eigenG,method="LR")$p.value*Me})
+
+ 	     return(list(Me=Me,p.value=p.value))
  	   	}
 
  	
