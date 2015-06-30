@@ -15,6 +15,9 @@ if(is.null(namesPar)){stop("par must have names")}
   fit$convergence=tmpfit$ierr
   fit$message=tmpfit$msg
   }
+  if(is.na(fit$value)){
+  stop("objective function returned NA, please check input values")
+  }
   names(fit$par)=namesPar
   Var=fit$par
   Var=get_tau(Var,logVar,tauRel)
@@ -68,7 +71,41 @@ if(is.null(namesPar)){stop("par must have names")}
   Var=list(var_e=var_e,taud=taud,tauw=tauw)
   return(Var)
   }
-#should get another getDL function, so that I can directly put X, y, W as input
+ getDL.XYZ=function(var_e,taud,tauw=NULL,eigenZd,X,y,W=NULL,kw=NULL,Zt=NULL){
+	n=length(y)
+ 	U1=eigenZd$U1
+	d1=eigenZd$d1
+	tXX=crossprod(X)
+	tU1y=crossprod(U1,y)
+ 	tU1X=crossprod(U1,X)
+ 	tXy=crossprod(X,y)
+ 	tyy=sum(y^2) 	
+ 	if(!is.null(W)){
+ 		tU1W=crossprod(U1,W)
+ 		tXW=crossprod(X,W)
+ 		tWW=crossprod(W)
+ 		tWy=crossprod(W,y)
+ 	}else{
+ 		tU1W=tXW=tWW=tWy=NULL
+ 		
+ 	}
+ 	if(!is.null(Zt)){
+ 		tZtZt=crossprod(Zt)
+ 		tU1Zt=crossprod(U1,Zt)
+ 		tXZt=crossprod(X,Zt)
+ 		tyZt=crossprod(y,Zt)
+ 		if(!is.null(W)){
+ 			tWZt=crossprod(W,Zt)
+ 		}else{tWZt=NULL}	
+ 	}else{
+ 		tZtZt=tU1Zt=tXZt=tyZt=NULL
+ 	}
+ 	 out=getDL(var_e,taud,d1=d1,n=n,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tauw=tauw,kw=kw,tU1W=tU1W,tXW=tXW,tWW=tWW,tWy=tWy,getQ=F,getS=F,get.tU1ehat=F,tZtZt=tZtZt,tU1Zt=tU1Zt,tXZt=tXZt,tyZt=tyZt,tWZt=tWZt,get_tSNP=F)
+ 	 
+ return(out)	
+ }
+ 
+
 getDL=function(var_e,taud,d1,n,tU1y,tU1X,tXX=NULL,tXy=NULL,tyy=NULL,tauw=NULL,kw=NULL,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=NULL,getQ=F,getS=F,get.tU1ehat=T,tZtZt=NULL,tU1Zt=NULL,tXZt=NULL,tyZt=NULL,tWZt=NULL,get_tSNP=F){
   out=list()
   kd=length(d1)
