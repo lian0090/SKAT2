@@ -73,8 +73,8 @@ if(is.null(namesPar)){stop("par must have names")}
   }
  getDL.XYZ=function(var_e,taud,tauw=NULL,eigenZd,X,y,W=NULL,kw=NULL,Zt=NULL){
 	n=length(y)
- 	U1=eigenG$U1
-	d1=eigenG$d1
+ 	U1=eigenZd$U1
+	d1=eigenZd$d1
 	tXX=crossprod(X)
 	tU1y=crossprod(U1,y)
  	tU1X=crossprod(U1,X)
