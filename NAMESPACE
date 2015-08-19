@@ -1,4 +1,4 @@
-useDynLib(SKAT2, .registration = TRUE)
+useDynLib(RSKAT2, .registration = TRUE)
 
 	
 exportPattern("^[^\\.]")

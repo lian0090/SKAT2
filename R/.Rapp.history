@@ -15,3 +15,98 @@ testZ
 3704/(3750/2+3000)
 3704/(3750/2+3000)-100
 3704/(3750/2+3000)-1
+(374-20)/31*17
+374/2
+?lm
+A=rep(1:3,each=20)
+A
+B=rep(1:2,times=30)
+B
+e=rnorm(60,0,1)
+Xa=model.matrix(~-1+A)
+Xa
+Xa=model.matrix(~-1+factor(A))
+Xa
+Xb=model.matrix(~-1+factor(B))
+y=Xa%*%c(1,2,3)+Xb%*%c(1,2)+e
+lm1=lm(y~-1+Xa+Xb)
+lm1
+Xb
+lm1=lm(y~-1+Xa+Xb)
+lm1
+aggregate(y,by=list(A),mean)
+mean(y)
+lm2=lm(y~Xa)
+lm2
+model.matrix(~A)
+model.matrix(as.factor(A))
+model.matrix(~as.factor(A))
+mean(y)
+lm2=lm(y~Xa)
+lm2
+aggregate(y,by=list(A))
+aggregate(y,by=list(A),mean)
+library(glm)
+?glm
+require(utils) # for str#
+nf <- gaussian()  # Normal family#
+nf#
+str(nf)
+4.1948       -2.0028
+4.1948        -0.5738
+lm1=lm(y~-1+Xa+Xb)
+lm1
+aggregate(y,by=list(A),mean)
+2.5930 -2.191910
+4.0221-0.40109
+4.5959--0.40109
+load("/Users/lianlian/Dropbox/work/arvalisGxE/testData/balance/dat.rda")
+load("/Users/lianlian/Dropbox/work/arvalisGxE/testData/balance/LSvalue.rda")
+LSvalue$g
+LSvalue$h
+head(dat)
+lm1=lm(y~-1+factor(IDE)+factor(IDL))
+lm1=lm(y~-1+factor(IDE)+factor(IDL),data=dat)
+lm1
+coef(lm1)
+cor(coef(lm1)[1:10],LSvalue$h)
+LSvalue$h+mean(dat$y)
+plot(LSvalue$h,coef(lm1)[1:10])
+coef(lm1)[1:10]-LSvalue$h
+aggregate(dat$y,by=list(dat$IDE),mean)
+dim(dat)
+lm1=lm(y~-1+Xa+Xb)
+lm1
+aggregate(y,by=list(A),mean)[,2]-coeff(lm1)[1:3]
+aggregate(y,by=list(A),mean)[,2]-coef(lm1)[1:3]
+aggregate(y,by=list(B),mean)[,2]
+aggregate(y,by=list(B),mean)[,2]-mean(y)
+?lmer
+library(lme4)
+?lmer
+sleepstudy
+head(sleepstudy)
+lmer(Reaction ~ Days + (|Days/ Subject), sleepstudy))
+lmer(Reaction ~ Days + (1|Days/ Subject), sleepstudy))
+lmer(Reaction ~ Days + (1|Days/ Subject), sleepstudy)
+A
+V
+B
+lmer(Reaction ~ as.factor(A) + as.factor(B)+(1|as.factor(A)/as.factor(B)), sleepstudy)
+lmer(Reaction ~ as.factor(A) + as.factor(B)+(1|as.factor(A)/as.factor(B)), sleepstudy)
+lmer(y~ as.factor(A) + as.factor(B)+(1|as.factor(A)/as.factor(B)))
+lmer(y~ as.factor(A) +(1|as.factor(A)/as.factor(B)))
+lmer(y~ as.factor(A) +(1|as.factor(A):as.factor(B)))
+A=rep(a:c,each=20)#
+B=rep(a:b,times=30)
+A=rep(letters[1:3],each=20)#
+B=rep(letters[1:2]times=30)
+A
+B=rep(letters[1:2],times=30)
+lmer(y~ A +(1|A/B))
+lmer(y~ A +(1|A:B))
+set.seed(30629)
+rnorm(10)
+set.seed(30629)
+rnorm(10)
+colnames(H)=rownames(H)=unique(ENV)

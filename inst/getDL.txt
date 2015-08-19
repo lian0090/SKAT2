@@ -1,0 +1,170 @@
+neg2Log=function (Var, tU1y, tU1X, tXX, tXy, tyy, d1, n, tU1W = NULL, 
+    tXW = NULL, tWW = NULL, tWy = NULL, kw = NULL, logVar = T, 
+    tauRel = NULL, REML = T) 
+{
+    Var = get_tau(Var, logVar, tauRel)
+    for (i in 1:length(Var)) {
+        assign(names(Var)[i], Var[[i]])
+    }
+    kd = length(d1)
+    terms = getDL(var_e = var_e, taud = taud, d1 = d1, n = n, 
+        tauw = tauw, tU1y = tU1y, tU1X = tU1X, tXX = tXX, tXy = tXy, 
+        tyy = tyy, tU1W = tU1W, tXW = tXW, tWW = tWW, tWy = tWy, 
+        kw = kw, getQ = F)
+    tXVinvX = terms$tXVinvX
+    tU1_ehat = terms$tU1_ehat
+    hat_alpha = terms$hat_alpha
+    if (kd < n) {
+        d_tau = terms$d_tau
+        logDetVd = sum(log(d1 * taud + var_e)) + (n - kd) * log(var_e)
+        tehat_Vd_ehat = sum(tU1_ehat^2 * d_tau) + (tyy + t(hat_alpha) %*% 
+            tXX %*% hat_alpha - 2 * sum(hat_alpha * tXy))/var_e
+    }
+    else {
+        d_sharp = terms$d_sharp
+        logDetVd = sum(log(d1 * taud + var_e))
+        tehat_Vd_ehat = sum(tU1_ehat^2 * d_sharp)
+    }
+    if (is.null(tU1W)) {
+        neg2logLik1 = logDetVd
+        neg2logLik3 = tehat_Vd_ehat
+    }
+    else {
+        tWVdy = terms$tWVdy
+        tXVdW = terms$tXVdW
+        Vgamma = terms$Vgamma
+        Cgamma = terms$Cgamma
+        tW_Vd_ehat = tWVdy - t(tXVdW) %*% hat_alpha
+        logDetVgamma = determinant(Vgamma, logarithm = T)$modulus
+        neg2logLik1 = logDetVd + logDetVgamma
+        tehat_Vd_W_Cgamma_tW_Vd_ehat = t(tW_Vd_ehat) %*% Cgamma %*% 
+            tW_Vd_ehat
+        neg2logLik3 = tehat_Vd_ehat - tehat_Vd_W_Cgamma_tW_Vd_ehat
+    }
+    neg2logLik2 = determinant(tXVinvX, logarithm = T)$modulus
+    if (REML == T) {
+        out <- sum(neg2logLik1, neg2logLik2, neg2logLik3)
+    }
+    else {
+        out <- sum(neg2logLik1, neg2logLik3) + n * log(2 * pi)
+    }
+    return(list(neg2logLik1,neg2logLik2,neg2logLik3))
+    return(out)
+}
+
+getDL<-
+function (var_e, taud, d1, n, tU1y, tU1X, tXX = NULL, tXy = NULL, 
+    tyy = NULL, tauw = NULL, kw = NULL, tU1W = NULL, tXW = NULL, 
+    tWW = NULL, tWy = NULL, getQ = F, getS = F, get.tU1ehat = T, 
+    tZtZt = NULL, tU1Zt = NULL, tXZt = NULL, tyZt = NULL, tWZt = NULL, 
+    get_tSNP = F) 
+{
+    out = list()
+    kd = length(d1)
+    d_sharp = 1/(d1 * taud + var_e)
+    out$d_sharp = d_sharp
+    if (kd < n) {
+        d_tau = d_sharp - 1/var_e
+        tXU1d_tau = sweep(t(tU1X), 2, d_tau, "*")
+        tXVdX = tXU1d_tau %*% tU1X + tXX/var_e
+        tXVdy = tXU1d_tau %*% tU1y + tXy/var_e
+        out$d_tau = d_tau
+    }
+    else {
+        tXU1d_sharp = sweep(t(tU1X), 2, d_sharp, "*")
+        tXVdX = tXU1d_sharp %*% tU1X
+        tXVdy = tXU1d_sharp %*% tU1y   
+    }
+    if (!is.null(tU1W)) {
+        if (kd < n) {
+            tWU1d_tau = sweep(t(tU1W), 2, d_tau, "*")
+            tXVdW = tXU1d_tau %*% tU1W + tXW/var_e
+            tWVdW = tWU1d_tau %*% tU1W + tWW/var_e
+            tWVdy = tWU1d_tau %*% tU1y + tWy/var_e
+        }
+        else {
+            tWU1d_sharp = sweep(t(tU1W), 2, d_sharp, "*")
+            tXVdW = tXU1d_sharp %*% tU1W
+            tWVdW = tWU1d_sharp %*% tU1W
+            tWVdy = tWU1d_sharp %*% tU1y
+        }
+        Gamma = rep(tauw, kw)
+        Gamma_tWVdW = sweep(tWVdW, 1, Gamma, "*")
+        Vgamma = Gamma_tWVdW
+        diag(Vgamma) = diag(Vgamma + 1)
+        Cgamma = sweep(solve(Vgamma), 2, Gamma, "*")
+        tXVdW_Cgamma_tWVdX = tXVdW %*% Cgamma %*% t(tXVdW)
+        tXVdW_Cgamma_tWVdy = tXVdW %*% Cgamma %*% tWVdy
+        tXVinvX = tXVdX - tXVdW_Cgamma_tWVdX
+        tXVinvy = tXVdy - tXVdW_Cgamma_tWVdy
+        out$tWVdy = tWVdy
+        out$tXVdW = tXVdW
+        out$Vgamma = Vgamma
+        out$Cgamma = Cgamma
+    }
+    else {
+        tXVinvX = tXVdX
+        tXVinvy = tXVdy
+    }
+    invtXVinvX = solve(tXVinvX)
+    hat_alpha = invtXVinvX %*% tXVinvy
+    if (get.tU1ehat == T) {
+        tU1_ehat = tU1y - as.vector(tU1X %*% hat_alpha)
+        out$tU1_ehat = tU1_ehat
+    }
+    out$hat_alpha = hat_alpha
+    out$tXVinvX = tXVinvX
+    if (getQ == T | getS == T) {
+        if (kd < n) {
+            tXVdZt = tXU1d_tau %*% tU1Zt + tXZt/var_e
+            
+            tyVdZt = t(tU1y * d_tau) %*% tU1Zt + tyZt/var_e
+            cat(tyVdZt,"\n");
+            tZtU1d_tau = sweep(t(tU1Zt), 2, d_tau, "*")
+            tZtVdZt = tZtU1d_tau %*% tU1Zt + tZtZt/var_e
+            if (!is.null(tauw)) {
+                tWVdZt = tWU1d_tau %*% tU1Zt + tWZt/var_e
+            }
+        }
+        else {
+            tXVdZt = tXU1d_sharp %*% tU1Zt
+            tyVdZt = t(tU1y * d_sharp) %*% tU1Zt
+            tZtU1d_sharp = sweep(t(tU1Zt), 2, d_sharp, "*")
+            tZtVdZt = tZtU1d_sharp %*% tU1Zt
+            if (!is.null(tauw)) 
+                tWVdZt = tWU1d_sharp %*% tU1Zt
+        }
+        
+        
+        tehatVdZt = tyVdZt - t(hat_alpha) %*% tXVdZt
+        if (!is.null(tauw)) {
+            tehatVdW = t(tWVdy) - t(hat_alpha) %*% tXVdW
+            LQ = tehatVdZt - tehatVdW %*% Cgamma %*% tWVdZt
+            tZtVinvZt = tZtVdZt - t(tWVdZt) %*% Cgamma %*% tWVdZt
+            tXVinvZt = tXVdZt - tXVdW %*% Cgamma %*% tWVdZt
+        }
+        else {
+            LQ = tehatVdZt
+            tZtVinvZt = tZtVdZt
+            tXVinvZt = tXVdZt
+        }
+        
+        tZtPZt = tZtVinvZt - t(tXVinvZt) %*% invtXVinvX %*% tXVinvZt
+        cat(tZtPZt,"\n")
+        Q = 1/2 * sum(LQ^2)
+        if (getQ == T) {
+            lambda = eigen(tZtPZt, only.values = T, symmetric = T)$values/2
+            out$Q = Q
+            out$lambda = lambda
+        }
+        if (getS == T) {
+            out$sdS = sqrt(sum(tZtPZt^2)/2)
+            out$S = Q - sum(diag(tZtPZt))/2
+        }
+    }
+    if (get_tSNP == T) {
+    }
+    return(out)
+}
+
+

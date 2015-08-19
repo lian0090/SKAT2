@@ -10,7 +10,10 @@ SKAT_davies <- function(q,lambda,h = rep(1,length(lambda)),delta = rep(0,length(
   if (length(h) != r) stop("lambda and h should have the same length!")
   if (length(delta) != r) stop("lambda and delta should have the same length!")
   
-  out <- .C("qfc",lambdas=as.double(lambda),noncentral=as.double(delta),df=as.integer(h),r=as.integer(r),sigma=as.double(sigma),q=as.double(q),lim=as.integer(lim),acc=as.double(acc),trace=as.double(rep(0,7)),ifault=as.integer(0),res=as.double(0),PACKAGE="SKAT2")
+#  out <- .C("qfc",lambdas=as.double(lambda),noncentral=as.double(delta),df=as.integer(h),r=as.integer(r),sigma=as.double(sigma),q=as.double(q),lim=as.integer(lim),acc=as.double(acc),trace=as.double(rep(0,7)),ifault=as.integer(0),res=as.double(0),PACKAGE="SKAT2")
+
+out<- .C("qfc",lambdas=as.double(lambda),noncentral=as.double(delta),df=as.integer(h),r=as.integer(r),sigma=as.double(sigma),q=as.double(q),lim=as.integer(lim),acc=as.double(acc),trace=as.double(rep(0,7)),ifault=as.integer(0),res=as.double(0))
+
 
   out$res <- 1 - out$res
   
@@ -120,3 +123,5 @@ SKAT_liu.MOD <- function(q, lambda, h = rep(1,length(lambda)), delta = rep(0,len
   return(Qq)
 
 }
+
+.onUnload<-function(libpath){library.dynam.unload("SKAT2",libpath)}
