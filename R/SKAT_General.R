@@ -217,7 +217,7 @@ testZ=function(y,X,W=NULL,tauRel=NULL,Zt,eigenZd,windowtest,tU1X=NULL,tU1y=NULL,
 	Zt=Zt[-whNAy,,drop=F]
     eigenZd$U1=eigenZd$U1[-whNAy,]
     }else{
-      	whNAy=NA
+      	whNAy=NULL
     }
 	out=list()
   	#Null model with no random effects
