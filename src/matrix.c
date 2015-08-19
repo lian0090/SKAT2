@@ -3,8 +3,8 @@
 #include <Rinternals.h>
 #include <Rdefines.h>
 #include <R_ext/RS.h>
-#include <R_ext/BLAS.h> /* for dgemm in BLAS R/src/extra/blas/blas.f*/
 #include <R_ext/Lapack.h>
+#include <R_ext/BLAS.h> /* for dgemm in BLAS R/src/extra/blas/blas.f*/
 
 
 
