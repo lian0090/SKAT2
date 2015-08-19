@@ -1,4 +1,4 @@
-fit.optim=function(par,fn,logVar=T,tauRel=NA, optimizer="bobyqa",...){
+fit.optim=function(par,fn,logVar=T,tauRel=NULL, optimizer="bobyqa",...){
 	namesPar=names(par)
 if(is.null(namesPar)){stop("par must have names")}
   if(optimizer=="optim"){
@@ -46,7 +46,7 @@ if(is.null(namesPar)){stop("par must have names")}
   	stop("Var names must be var_e, taud, or tauwD")
   }
  
-  if(is.na(tauRel)){
+  if(is.null(tauRel)){
   	names.tauw=grep("tauw",namesPar,value=T)
   	  	} else{
   	for(i in 1:length(tauRel)){
@@ -71,7 +71,7 @@ if(is.null(namesPar)){stop("par must have names")}
   Var=list(var_e=var_e,taud=taud,tauw=tauw)
   return(Var)
   }
- getDL.XYZ=function(var_e,taud,tauw=NA,eigenZd,X,y,W=NA,kw=NA,Zt=NA){
+ getDL.XYZ=function(var_e,taud,tauw=NULL,eigenZd,X,y,W=NULL,kw=NULL,Zt=NULL){
 	n=length(y)
  	U1=eigenZd$U1
 	d1=eigenZd$d1
@@ -80,32 +80,32 @@ if(is.null(namesPar)){stop("par must have names")}
  	tU1X=crossprod(U1,X)
  	tXy=crossprod(X,y)
  	tyy=sum(y^2) 	
- 	if(!is.na(W[1])){
+ 	if(!is.null(W)){
  		tU1W=crossprod(U1,W)
  		tXW=crossprod(X,W)
  		tWW=crossprod(W)
  		tWy=crossprod(W,y)
  	}else{
- 		tU1W=tXW=tWW=tWy=NA
+ 		tU1W=tXW=tWW=tWy=NULL
  		
  	}
- 	if(!is.na(Zt[1])){
+ 	if(!is.null(Zt)){
  		tZtZt=crossprod(Zt)
  		tU1Zt=crossprod(U1,Zt)
  		tXZt=crossprod(X,Zt)
  		tyZt=crossprod(y,Zt)
- 		if(!is.null(W[1])){
+ 		if(!is.null(W)){
  			tWZt=crossprod(W,Zt)
- 		}else{tWZt=NA}	
+ 		}else{tWZt=NULL}	
  	}else{
- 		tZtZt=tU1Zt=tXZt=tyZt=NA
+ 		tZtZt=tU1Zt=tXZt=tyZt=NULL
  	}
- 	 out=getDL(var_e,taud,d1=d1,n=n,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tauw=tauw,kw=kw,tU1W=tU1W,tXW=tXW,tWW=tWW,tWy=tWy,getQ=F,getS=F,get.tU1ehat=F,tZtZt=tZtZt,tU1Zt=tU1Zt,tXZt=tXZt,tyZt=tyZt,tWZt=tWZt,get_tSNP=F)
+ 	 out=getDL(var_e,taud,d1=d1,n=n,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tauw=tauw,kw=kw,tU1W=tU1W,tXW=tXW,tWW=tWW,tWy=tWy,tZtZt=tZtZt,tU1Zt=tU1Zt,tXZt=tXZt,tyZt=tyZt,tWZt=tWZt,getQ=F,getS=F,getNeg2Log=T,REML=T)
  	 
  return(out)	
  }
  
-neg2Log=function(Var,tU1y,tU1X,tXX,tXy,tyy,d1,n,tU1W=NA,tXW=NA,tWW=NA,tWy=NA,kw=NA,logVar=T,tauRel=NA,REML=1){
+neg2Log=function(Var,tU1y,tU1X,tXX,tXy,tyy,d1,n,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=NULL,kw=NULL,logVar=T,tauRel=NULL,REML=T){
   
   #d1 and U1 from d1=svd(Zd)$d^2, U1=svd(Zd)$u 
   Var=get_tau(Var,logVar,tauRel)
@@ -114,14 +114,24 @@ neg2Log=function(Var,tU1y,tU1X,tXX,tXy,tyy,d1,n,tU1W=NA,tXW=NA,tWW=NA,tWy=NA,kw=
   } 
  
 
-  out<-getDL(var_e=var_e,taud=taud,d1=d1,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tauw=tauw,kw=kw,tU1W=tU1W,tXW=tXW,tWW=tWW,tWy=tWy,getNeg2Log=T,REML=T)
+  out<-getDL(var_e=var_e,taud=taud,d1=d1,n=n,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tauw=tauw,kw=kw,tU1W=tU1W,tXW=tXW,tWW=tWW,tWy=tWy,getNeg2Log=T,REML=REML)
   
   return(out)
  }
 
  
-getDL=function(var_e,taud,d1,n,tU1y,tU1X,tXX,tXy,tyy,tauw=NA,kw=NA,tU1W=NA,tXW=NA,tWW=NA,tWy=NA,tZtZt=NA,tU1Zt=NA,tXZt=NA,tyZt=NA,tWZt=NA,getQ=F,getS=F,getNeg2Log,REML=T)
-{
+getDL=function(var_e,taud,d1,n,tU1y,tU1X,tXX,tXy,tyy,tauw=NULL,kw=NULL,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=NULL,tZtZt=NULL,tU1Zt=NULL,tXZt=NULL,tyZt=NULL,tWZt=NULL,getQ=F,getS=F,getNeg2Log,REML=T)
+{	if(is.null(tauw))tauw=NA
+	if(is.null(kw))kw=NA
+	if(is.null(tU1W))tU1W=NA
+	if(is.null(tXW))tXW=NA
+	if(is.null(tWW))tWW=NA
+	if(is.null(tWy))tWy=NA
+	if(is.null(tZtZt))tZtZt=NA
+	if(is.null(tU1Zt))tU1Zt=NA
+	if(is.null(tXZt))tXZt=NA
+	if(is.null(tyZt))tyZt=NA
+	if(is.null(tWZt))tWZt=NA
 	getQ=as.integer(getQ)
 	getS=as.integer(getS)
 	getNeg2Log=as.integer(getNeg2Log)
@@ -181,7 +191,7 @@ testWindow=function(y,X,Zt,eigenG=NULL,W=NULL,removeZtFromG=F,optimizer='bobyqa'
 	out=testZ(y,X,eigenZd=eigenG,Zt=Zt,W=W,tauRel=paste("tauw",nw,"=-taud",sep=""),windowtest=c("Score","SKAT"),optimizer=optimizer)
 	}else{
 		
-	out=testZ(y,X,eigenZd=eigenG,Zt=Zt,W=W,tauRel=NA,windowtest=c("Score","SKAT"),optimizer=optimizer)	
+	out=testZ(y,X,eigenZd=eigenG,Zt=Zt,W=W,tauRel=NULL,windowtest=c("Score","SKAT"),optimizer=optimizer)	
 	}
 	return(out)
 }
@@ -191,7 +201,7 @@ testWindow=function(y,X,Zt,eigenG=NULL,W=NULL,removeZtFromG=F,optimizer='bobyqa'
       	
 
 
-testZ=function(y,X,W=NA,tauRel=NA,Zt,eigenZd,windowtest,tU1X=NA,tU1y=NA,tXX=NA,tXy=NA,tyy=NA,logVar=T,optimizer="bobyqa"){
+testZ=function(y,X,W=NULL,tauRel=NULL,Zt,eigenZd,windowtest,tU1X=NULL,tU1y=NULL,tXX=NULL,tXy=NULL,tyy=NULL,logVar=T,optimizer="bobyqa"){
 	
     #check input
     X=as.matrix(X)
@@ -249,7 +259,7 @@ testZ=function(y,X,W=NA,tauRel=NA,Zt,eigenZd,windowtest,tU1X=NA,tU1y=NA,tXX=NA,t
   if(is.null(tyy)) tyy=sum(y^2)
   }
   
-  if(!is.na(W[1])){
+  if(!is.null(W)){
   	
   	if(!is.list(W)){stop("W must be a list of all other random effect incidence matrix")}
    kw=sapply(W,ncol)
@@ -263,15 +273,15 @@ testZ=function(y,X,W=NA,tauRel=NA,Zt,eigenZd,windowtest,tU1X=NA,tU1y=NA,tXX=NA,t
     tXW=crossprod(X,W)
     tWW=crossprod(W,W)
     tWy=crossprod(W,y)
-    if(!is.null(windowtest)){tWZt=crossprod(W,Zt)}else{tWZt=NA}
+    if(!is.null(windowtest)){tWZt=crossprod(W,Zt)}else{tWZt=NULL}
   }else {
     nw=0
-    tauw=NA
-    tU1W=NA
-    tXW=NA
-    tWW=NA
-    tWy=NA
-    tWZt=NA
+    tauw=NULL
+    tU1W=NULL
+    tXW=NULL
+    tWW=NULL
+    tWy=NULL
+    tWZt=NULL
   }
   
   if(!is.null(windowtest)){
