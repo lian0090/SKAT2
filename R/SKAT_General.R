@@ -114,7 +114,7 @@ neg2Log=function(Var,tU1y,tU1X,tXX,tXy,tyy,d1,n,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=
   } 
  
 
-  out<-getDL(var_e=var_e,taud=taud,d1=d1,n=n,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tauw=tauw,kw=kw,tU1W=tU1W,tXW=tXW,tWW=tWW,tWy=tWy,getNeg2Log=T,REML=REML)
+  out<-getDL(var_e=var_e,taud=taud,d1=d1,n=n,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tauw=tauw,kw=kw,tU1W=tU1W,tXW=tXW,tWW=tWW,tWy=tWy,getNeg2Log=T,REML=REML)$neg2logLik
   
   return(out)
  }
