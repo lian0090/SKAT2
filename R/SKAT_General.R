@@ -120,7 +120,7 @@ neg2Log=function(Var,tU1y,tU1X,tXX,tXy,tyy,d1,n,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=
  }
 
  
-getDL=function(var_e,taud,d1,n,tU1y,tU1X,tXX,tXy,tyy,tauw=NULL,kw=NULL,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=NULL,tZtZt=NULL,tU1Zt=NULL,tXZt=NULL,tyZt=NULL,tWZt=NULL,getQ=F,getS=F,getNeg2Log,REML=T)
+getDL=function(var_e,taud,d1,n,tU1y,tU1X,tXX,tXy,tyy,tauw=NULL,kw=NULL,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=NULL,tZtZt=NULL,tU1Zt=NULL,tXZt=NULL,tyZt=NULL,tWZt=NULL,getQ=F,getS=F,getNeg2Log=T,REML=T)
 {	if(is.null(tauw))tauw=NA
 	if(is.null(kw))kw=NA
 	if(is.null(tU1W))tU1W=NA
@@ -337,7 +337,7 @@ testZ=function(y,X,W=NULL,tauRel=NULL,Zt,eigenZd,windowtest,tU1X=NULL,tU1y=NULL,
     if(nw>0)tauw=fit0$outVar$tauw
     getQ=("SKAT" %in% windowtest)
     getS= ("Score" %in% windowtest)
-    Qdis=getDL(var_e,taud=taud,tauw=tauw,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,d1=d1,n=n,kw=kw,tU1W=tU1W,tXW=tXW,tWW=tWW,tWy=tWy,getQ=getQ,getS=getS,tZtZt=tZtZt,tU1Zt=tU1Zt,tXZt=tXZt,tyZt=tyZt,tWZt=tWZt)	
+    Qdis=getDL(var_e,taud=taud,d1=d1,n=n,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,tauw=tauw,kw=kw,tU1W=tU1W,tXW=tXW,tWW=tWW,tWy=tWy,tZtZt=tZtZt,tU1Zt=tU1Zt,tXZt=tXZt,tyZt=tyZt,tWZt=tWZt,getQ=getQ,getS=getS,getNeg2Log=F,REML=T)	
     
     if("SKAT" %in% windowtest){
       Q=Qdis$Q
