@@ -262,12 +262,12 @@ testZ=function(y,X,W=NULL,tauRel=NULL,Zt,eigenZd,windowtest,tU1X=NULL,tU1y=NULL,
   if(!is.null(W)){
   	
   	if(!is.list(W)){stop("W must be a list of all other random effect incidence matrix")}
-   kw=sapply(W,ncol)
-   nw=length(kw)
-   W=do.call(cbind,W)
+  	kw=sapply(W,ncol)
+    nw=length(kw)
+    W=do.call(cbind,W)
     if(sum(kw)!=ncol(W))stop("sum of kw should be equal to the number of columns in W")
-   #remove NA values
-   if(length(whNAy)>0){W=W[-whNAy,,drop=F]} 
+    #remove NA values
+    if(length(whNAy)>0){W=W[-whNAy,,drop=F]} 
     tauw=rep(0,nw)
     tU1W=crossprod(U1,W)
     tXW=crossprod(X,W)
@@ -276,6 +276,7 @@ testZ=function(y,X,W=NULL,tauRel=NULL,Zt,eigenZd,windowtest,tU1X=NULL,tU1y=NULL,
     if(!is.null(windowtest)){tWZt=crossprod(W,Zt)}else{tWZt=NULL}
   }else {
     nw=0
+    kw=NULL
     tauw=NULL
     tU1W=NULL
     tXW=NULL
@@ -285,11 +286,11 @@ testZ=function(y,X,W=NULL,tauRel=NULL,Zt,eigenZd,windowtest,tU1X=NULL,tU1y=NULL,
   }
   
   if(!is.null(windowtest)){
-  tU1Zt=crossprod(U1,Zt)
-  tZty=crossprod(Zt,y)
-  tyZt=t(tZty)
-  tXZt=crossprod(X,Zt)
-  tZtZt=crossprod(Zt,Zt)	
+  	tU1Zt=crossprod(U1,Zt)
+  	tZty=crossprod(Zt,y)
+  	tyZt=t(tZty)
+  	tXZt=crossprod(X,Zt)
+  	tZtZt=crossprod(Zt,Zt)	
   }
   
   ##test with low rank Zh	
