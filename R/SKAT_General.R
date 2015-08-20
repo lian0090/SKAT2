@@ -1,3 +1,25 @@
+##matprod can take care of vectors, vectors are automattically considered as a matrix with one column
+matprod<-function(X,Y,transX=F,transY=F).Call("C_matprod",X,Y,as.integer(transX),as.integer(transY))
+Ccrossprod<-function(X,Y=NULL){
+	if(is.null(Y)){
+		return(matprod(X,X,T,F))
+	}else{
+		return(matprod(X,Y,T,F))
+	}
+	
+}
+Ctcrossprod<-function(X,Y=NULL){
+	if(is.null(Y)){
+		return(matprod(X,X,F,T))
+	}else{
+		return(matprod(X,Y,F,T))
+	}	
+	
+} 
+#matinv can take acount of scaler case.
+matinv<-function(X) .Call("C_matinv",X)
+
+
 fit.optim=function(par,fn,logVar=T,tauRel=NULL, optimizer="bobyqa",...){
 	namesPar=names(par)
 if(is.null(namesPar)){stop("par must have names")}
@@ -75,27 +97,27 @@ if(is.null(namesPar)){stop("par must have names")}
 	n=length(y)
  	U1=eigenZd$U1
 	d1=eigenZd$d1
-	tXX=crossprod(X)
-	tU1y=crossprod(U1,y)
- 	tU1X=crossprod(U1,X)
- 	tXy=crossprod(X,y)
+	tXX=Ccrossprod(X)
+	tU1y=Ccrossprod(U1,y)
+ 	tU1X=Ccrossprod(U1,X)
+ 	tXy=Ccrossprod(X,y)
  	tyy=sum(y^2) 	
  	if(!is.null(W)){
- 		tU1W=crossprod(U1,W)
- 		tXW=crossprod(X,W)
- 		tWW=crossprod(W)
- 		tWy=crossprod(W,y)
+ 		tU1W=Ccrossprod(U1,W)
+ 		tXW=Ccrossprod(X,W)
+ 		tWW=Ccrossprod(W)
+ 		tWy=Ccrossprod(W,y)
  	}else{
  		tU1W=tXW=tWW=tWy=NULL
  		
  	}
  	if(!is.null(Zt)){
- 		tZtZt=crossprod(Zt)
- 		tU1Zt=crossprod(U1,Zt)
- 		tXZt=crossprod(X,Zt)
- 		tyZt=crossprod(y,Zt)
+ 		tZtZt=Ccrossprod(Zt)
+ 		tU1Zt=Ccrossprod(U1,Zt)
+ 		tXZt=Ccrossprod(X,Zt)
+ 		tyZt=Ccrossprod(y,Zt)
  		if(!is.null(W)){
- 			tWZt=crossprod(W,Zt)
+ 			tWZt=Ccrossprod(W,Zt)
  		}else{tWZt=NULL}	
  	}else{
  		tZtZt=tU1Zt=tXZt=tyZt=NULL
@@ -118,6 +140,7 @@ neg2Log=function(Var,tU1y,tU1X,tXX,tXy,tyy,d1,n,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=
   
   return(out)
  }
+
 
  
 getDL=function(var_e,taud,d1,n,tU1y,tU1X,tXX,tXy,tyy,tauw=NULL,kw=NULL,tU1W=NULL,tXW=NULL,tWW=NULL,tWy=NULL,tZtZt=NULL,tU1Zt=NULL,tXZt=NULL,tyZt=NULL,tWZt=NULL,getQ=F,getS=F,getNeg2Log=T,REML=T)
@@ -227,9 +250,10 @@ testZ=function(y,X,W=NULL,tauRel=NULL,Zt,eigenZd,windowtest,tU1X=NULL,tU1y=NULL,
   			mod=lm(y~-1+X)
   			resid=residuals(mod)
   			s2 = summary(mod)$sigma**2
-  			Q=sum((t(resid)%*%(Zt))^2)/s2/2
-  			W.1=t(Zt) %*% Zt - (t(Zt) %*%X)%*%solve(t(X)%*%X)%*% (t(X) %*% Zt )
-			lambda=eigen(W.1/2,symmetric=TRUE, only.values = TRUE)$values
+  			Q=sum(Ccrossprod(resid,Zt)^2)/s2/2
+  			tXZt=Ccrossprod(X,Zt)
+  			W.1=matprod(Zt,Zt,T,F) -matprod(matprod(tXZt,matinv(matprod(X,X,T,F)),T,F),tXZt,F,F)  
+  			lambda=eigen(W.1/2,symmetric=TRUE, only.values = TRUE)$values
 			lambda1=lambda
 			IDX1<-which(lambda >= 0)
 			# eigenvalue bigger than mean(lambda1[IDX1])/100000 
@@ -254,8 +278,8 @@ testZ=function(y,X,W=NULL,tauRel=NULL,Zt,eigenZd,windowtest,tU1X=NULL,tU1y=NULL,
   
   
   if(nd<n){
-  if(is.null(tXy)) tXy=crossprod(X,y)
-  if(is.null(tXX)) tXX=crossprod(X)
+  if(is.null(tXy)) tXy=Ccrossprod(X,y)
+  if(is.null(tXX)) tXX=Ccrossprod(X,X)
   if(is.null(tyy)) tyy=sum(y^2)
   }
   
@@ -269,11 +293,11 @@ testZ=function(y,X,W=NULL,tauRel=NULL,Zt,eigenZd,windowtest,tU1X=NULL,tU1y=NULL,
     #remove NA values
     if(length(whNAy)>0){W=W[-whNAy,,drop=F]} 
     tauw=rep(0,nw)
-    tU1W=crossprod(U1,W)
-    tXW=crossprod(X,W)
-    tWW=crossprod(W,W)
-    tWy=crossprod(W,y)
-    if(!is.null(windowtest)){tWZt=crossprod(W,Zt)}else{tWZt=NULL}
+    tU1W=Ccrossprod(U1,W)
+    tXW=Ccrossprod(X,W)
+    tWW=Ccrossprod(W,W)
+    tWy=Ccrossprod(W,y)
+    if(!is.null(windowtest)){tWZt=Ccrossprod(W,Zt)}else{tWZt=NULL}
   }else {
     nw=0
     kw=NULL
@@ -286,11 +310,10 @@ testZ=function(y,X,W=NULL,tauRel=NULL,Zt,eigenZd,windowtest,tU1X=NULL,tU1y=NULL,
   }
   
   if(!is.null(windowtest)){
-  	tU1Zt=crossprod(U1,Zt)
-  	tZty=crossprod(Zt,y)
-  	tyZt=t(tZty)
-  	tXZt=crossprod(X,Zt)
-  	tZtZt=crossprod(Zt,Zt)	
+  	tU1Zt=Crossprod(U1,Zt)
+  	tyZt=Ccrossprod(y,Zt)
+  	tXZt=Ccrossprod(X,Zt)
+  	tZtZt=Ccrossprod(Zt)	
   }
   
   ##test with low rank Zh	
