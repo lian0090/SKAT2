@@ -1,7 +1,9 @@
 cd ~/Dropbox/github/SKAT2/src
 R CMD SHLIB matrix.c getDL.c -o getDL.so
+#R CMD SHLIB matrix.c getDL.c -o getDL.so -llapack -lblas
 R CMD SHLIB qfc.cpp -o qfc.so
-dir="~/Dropbox/github/SKAT2"
+#dir="~/Dropbox/github/SKAT2"
+dir="~/SKAT2"
 setwd(file.path(dir,"src"))
 dyn.load("getDL.so")
 dyn.load("qfc.so")

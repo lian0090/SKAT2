@@ -2,20 +2,13 @@
 #include <Rmath.h>
 #include <Rinternals.h>
 #include <Rdefines.h>
-#include <R_ext/RS.h>
-#include <R_ext/Lapack.h>
-#include <R_ext/BLAS.h> /* for dgemm in BLAS R/src/extra/blas/blas.f*/
-
-
-
-
-
+#include "Fortranmatrix.h"
 // A will be written over with Ainv
  void matinv(double *A, int N)
 {
 	int *IPIV= (int *) malloc(N*sizeof(int));
 	int info;
-	F77_CALL(dgetrf)(&N, &N, A, &N, IPIV, &info );
+	dgetrf_(&N, &N, A, &N, IPIV, &info );
 	
 	if (info < 0)
 	error("argument %d of Lapack routine %s had invalid value",
@@ -27,7 +20,7 @@
 	int LWORK=N*N;
 	double *WORK = (double *) malloc(LWORK*sizeof(double));
 		
-	F77_CALL(dgetri)(&N, A, &N, IPIV, WORK, &LWORK, &info);
+	dgetri_(&N, A, &N, IPIV, WORK, &LWORK, &info);
 	
 	free(IPIV);
 	free(WORK);
@@ -114,7 +107,7 @@ int nrxop,ncxop,nryop,ncyop;
     // printf("nrxop:%d, ncxop:%d, nryop:%d,ncyop:%d\n",nrxop,ncxop,nryop,ncyop);
     //printf("transa:%c, transb:%c,\n",transa,transb);
      
-	 F77_CALL(dgemm)(&transa, &transb, &nrxop, &ncyop, &ncxop, &alpha,
+	 dgemm_(&transa, &transb, &nrxop, &ncyop, &ncxop, &alpha,
 			    x, &nrx, y, &nry, &beta, z, &nrxop);
    
 }
@@ -137,7 +130,7 @@ int nrxop,ncxop,nryop,ncyop;
     isuppz = (int *) calloc(2*n, sizeof(int));
     /* ask for optimal size of work arrays */
     lwork = -1; liwork = -1;
-    F77_CALL(dsyevr)(jobv, range, uplo, &n, rx, &n,
+    dsyevr_(jobv, range, uplo, &n, rx, &n,
                      &vl, &vu, &il, &iu, &abstol, &m, values,
                      z, &n, isuppz,
                      &tmp, &lwork, &itmp, &liwork, &info);
@@ -148,7 +141,7 @@ int nrxop,ncxop,nryop,ncyop;
     
     work = (double *) calloc(lwork, sizeof(double));
     iwork = (int *) calloc(liwork, sizeof(int));
-    F77_CALL(dsyevr)(jobv, range, uplo, &n, rx, &n,
+    dsyevr_(jobv, range, uplo, &n, rx, &n,
                      &vl, &vu, &il, &iu, &abstol, &m, values,
                      z, &n, isuppz,
                      work, &lwork, iwork, &liwork, &info);
@@ -169,7 +162,7 @@ int nrxop,ncxop,nryop,ncyop;
     double *A=(double*)calloc(n*n,sizeof(double)); 
     memcpy(A,X, n*n*sizeof(double));
     int *jpvt = (int *) R_alloc(n, sizeof(int));
-    F77_CALL(dgetrf)(&n, &n, A, &n, jpvt, &info);
+    dgetrf_(&n, &n, A, &n, jpvt, &info);
     if (info < 0)
 	error("error code from Lapack routine dgetrf");
     else if (info > 0) {
