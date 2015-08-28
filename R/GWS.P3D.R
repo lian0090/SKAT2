@@ -40,7 +40,7 @@ P3D.NULL=function(y,X0,G){
 	out$eigenG=eigenG;
 	out$Var=Var;
 	class(out)=c("list","P3D0")
-	return(Var)
+	return(out)
 }
 
 ##perform association mapping for provided markers while correcting for multiple test.
