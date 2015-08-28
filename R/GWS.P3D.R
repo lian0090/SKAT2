@@ -4,7 +4,7 @@
 #Population structure previously determined. 
 P3D.NULL=function(y,X0,G){
 	out=list()
-	if(class(G)=="matrix"){
+	if("matrix" %in% class(G)){
 		cat("To save computation time, it is better to supply eigenG instead of G \n");
 		eigenG=getEigenG(G);
 	}else if( !("eigenG" %in% class(G))){
