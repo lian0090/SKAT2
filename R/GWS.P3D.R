@@ -2,7 +2,16 @@
 #It is not exactly the same as that from emma, due to the small difference in estimating variance components. 
 #If I use the same variance component from emma to put into getDL, I will get exactly the same pvalue 
 #Population structure previously determined. 
-P3D.NULL=function(y,X0,eigenG){
+getP3D0=function(y,X0,G){
+	out=list()
+	if(class(G)=="matrix"){
+		cat("To save computation time, it is better to supply eigenG instead of G \n");
+		eigenG=getEigenG(G);
+	}else if( !("eigenG" %in% class(G))){
+		eigenG=G;
+	}else{
+		stop("G must be a matrix or eigenG")
+	}
 	#X0: fixed effects not being tested
 	 if(any(is.na(y))){
   	#optim function will report not being able to evalue function at intial values when there is NA
@@ -26,10 +35,47 @@ P3D.NULL=function(y,X0,eigenG){
 	fit0<-fit.optim(par=Var,fn=neg2Log,logVar=T,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,d1=d1,n=n)
 	Var=fit0$par
 	names(Var)=c("var_e","var_g")
+	out$y=y;
+	out$X0=X0;
+	out$eigenG=eigenG;
+	out$Var=Var;
+	class(out)=c("list","P3D0")
 	return(Var)
 }
 
-singleSNP=function(y,X0,Xt,Var=NULL,eigenG,method="LR",P3D=T,lm0=NULL){
+##perform association mapping for provided markers while correcting for multiple test.
+ GWAS.P3D=function(Xt,P3D0,multipleCorrection=T){
+ 	 	 if(! ("P3D0" %in% class(P3D0))) stop("P3D0 must be the model fitting from getP3D0")
+ 	 	 
+ 	 	 Xt=as.matrix(Xt)
+ 	   	 X0=as.matrix(P3D0$X0)
+ 	   	 y=P3D0$y
+ 	   	 Var=P3D0$Var
+ 	   	 eigenG=P3D0$eigenG
+ 	   	 if(multipleCorrection==T){
+ 	   	 	Me=Meff(Xt)
+ 	   	 	cat("effective number of test is ",Me,"\n")
+ 	   	 	}else{
+ 	   	 		Me=1
+ 	   	 	}
+ 	   	 p.value=rep(NA,ncol(Xt))
+       	 
+ 	   	 p.value=apply(Xt,2,function(a){
+ 	   	 	singleSNP.P3D(y,X0=X0,Xt=a,Var=Var,eigenG=eigenG,method="LR")$p.value*Me})
+
+ 	     return(list(Me=Me,p.value=p.value))
+ 	   	}
+
+
+singleSNP=function(y,X0,Xt,Var=NULL,G,method="LR",P3D=T,lm0=NULL){
+	if(class(G)=="matrix"){
+		cat("To save computation time, it is better to supply eigenG instead of G \n");
+		eigenG=getEigenG(G);
+	}else if( !("eigenG" %in% class(G))){
+		eigenG=G;
+	}else{
+		stop("G must be a matrix or eigenG")
+	}
 	##Var is the variance for the NULL model, without fitting the test SNPs 
     X0=as.matrix(X0)
     Xt=as.matrix(Xt)
@@ -145,22 +191,6 @@ singleSNP.P3D=function(y,X0,Xt,Var,eigenG,method="LR"){
  }
 
 
- ##perform association mapping for provided markers while correcting for multiple test.
- GWAS.P3D=function(y,X0,Xt,Var,eigenG,multipleCorrection=T){
- 	   	 Xt=as.matrix(Xt)
- 	   	 X0=as.matrix(X0)
- 	   	 if(multipleCorrection==T){
- 	   	 	Me=Meff(Xt)
- 	   	 	cat("effective number of test is ",Me,"\n")
- 	   	 	}else{
- 	   	 		Me=1
- 	   	 	}
- 	   	 p.value=rep(NA,ncol(Xt))
-       	 
- 	   	 p.value=apply(Xt,2,function(a){singleSNP.P3D(y,X0=X0,Xt=a,Var=Var,eigenG=eigenG,method="LR")$p.value*Me})
-
- 	     return(list(Me=Me,p.value=p.value))
- 	   	}
-
+ 
  	
  

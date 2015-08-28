@@ -1,4 +1,62 @@
 ##functions
+getEigenG=function(G,precision=1e-5){
+  out=list()
+  eigenG=eigen(G,symmetric=T)
+  U1=eigenG$vectors
+  d1=eigenG$values	
+  
+  wh0=which(d1<precision)
+  if(length(wh0>0)){
+  	d1=d1[-wh0] 
+  	U1=U1[,-wh0]
+ 	}
+  
+  out$d1=d1
+  out$U1=U1
+  class(out)=c("list","eigenG")
+  return(out)
+}
+
+
+
+
+getEigenZd=function(Kd=NULL,Zd=NULL,precision=1e-5){
+  out=list()
+  if(!is.null(Kd) & !is.null(Zd)) stop("Only use one of Kd or Zd")
+  if(!is.null(Zd)){
+  	if(any(is.na(Zd))){
+  		Zd=meanImpute(Zd)
+  	}
+  	if(nrow(Zd)<=ncol(Zd)) {
+  		Kd=tcrossprod(scale(Zd,T,F))
+  	    eigenKd=eigen(Kd,symmetric=T)
+    	U1=eigenKd$vectors
+    	d1=eigenKd$values	
+  	}else{
+  	svdZd=svd(Zd,nv=0)
+    U1=svdZd$u
+    d1=svdZd$d^2 ###Do not forget d^2!!!
+  	}
+  }	else{
+    eigenKd=eigen(Kd,symmetric=T)
+    U1=eigenKd$vectors
+    d1=eigenKd$values	
+  }
+  
+  wh0=which(d1<precision)
+  if(length(wh0>0)){
+  	d1=d1[-wh0] 
+  	U1=U1[,-wh0]
+ 	}
+  
+  out$d1=d1
+  out$U1=U1
+ 
+  return(out)
+}
+
+
+
 #Impute marker genotypes by column mean
 meanImpute=function(X){
 	X=apply(X,2,function(a){if(any(is.na(a))){a[which(is.na(a))]=mean(a,na.rm=T)};return(a)})
