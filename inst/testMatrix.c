@@ -32,6 +32,130 @@ sh8 <- solve(h8)
 .Call("R_matinv",h8);
 */
 //testing in R
+SEXP C_symmatprod(SEXP R_x, SEXP R_trans)
+{
+    PROTECT(R_x = AS_NUMERIC(R_x));
+    int dimx[2];
+    SEXP Rdimx;
+    PROTECT(Rdimx=getAttrib(R_x,R_DimSymbol));
+    if(isNull(Rdimx)){
+        dimx[0]=length(R_x);
+        dimx[1]=1;
+    }else{
+        dimx[0] =INTEGER(Rdimx)[0];
+        dimx[1]=INTEGER(Rdimx)[1];
+        
+    }
+    int trans=INTEGER_VALUE(R_trans);
+    double *x;
+    x=NUMERIC_POINTER(R_x);
+    
+    SEXP R_z;
+    
+    PROTECT(R_z=allocMatrix(REALSXP,dimx[trans],dimx[trans]));
+    
+    // printf("dimension of Z is %d,%d\n",dimx[transa],dimy[!transb]);
+    
+    double *z;
+    z=NUMERIC_POINTER(R_z);
+    char transLetters[3]="NT";
+    symmatprod(x, dimx[0], dimx[1],z, transLetters[trans],1,0);
+    
+    UNPROTECT(3);
+    return(R_z);
+    
+}
+
+
+//functions directly used by R, not included in header file
+SEXP C_matprod(SEXP R_x, SEXP R_y, SEXP R_transa, SEXP R_transb)
+{
+    PROTECT(R_x=AS_NUMERIC(R_x));
+    PROTECT(R_y=AS_NUMERIC(R_y));
+    int dimx[2],dimy[2];
+    SEXP Rdimx, Rdimy;
+    PROTECT(Rdimx=getAttrib(R_x,R_DimSymbol));
+    PROTECT(Rdimy=getAttrib(R_y,R_DimSymbol));
+    if(isNull(Rdimx)){
+        dimx[0]=length(R_x);
+        dimx[1]=1;
+    }else{
+        dimx[0] =INTEGER(Rdimx)[0];
+        dimx[1]=INTEGER(Rdimx)[1];
+        
+    }
+    if(isNull(Rdimy)){
+        dimy[0]=length(R_y);
+        dimy[1]=1;
+    }else{
+        dimy[0] =INTEGER(Rdimy)[0];
+        dimy[1]=INTEGER(Rdimy)[1];
+    }
+    
+    int transa=INTEGER_VALUE(R_transa);
+    int transb=INTEGER_VALUE(R_transb);
+    double *x;
+    x=NUMERIC_POINTER(R_x);
+    double *y;
+    y=NUMERIC_POINTER(R_y);
+    
+    SEXP R_z;
+    
+    
+    PROTECT(R_z=allocMatrix(REALSXP,dimx[transa],dimy[!transb]));
+    
+    // printf("dimension of Z is %d,%d\n",dimx[transa],dimy[!transb]);
+    
+    char trans[3]="NT";
+    
+    double *z;
+    z=NUMERIC_POINTER(R_z);
+    
+    matprod(x, dimx[0], dimx[1], y, dimy[0],  dimy[1],   z,  trans[transa],  trans[transb],1,0);
+    
+    UNPROTECT(5);
+    return(R_z);
+    
+}
+
+
+
+SEXP C_matinv(SEXP R_A)
+{
+    PROTECT(R_A=AS_NUMERIC(R_A));
+    SEXP Rdimx;
+    PROTECT(Rdimx=getAttrib(R_A,R_DimSymbol));
+    int M, N;
+    if(isNull(Rdimx)){
+        if(length(R_A)==1){
+            M=1;
+            N=1;
+        }else{
+            error("X must be a matrix or scaler\n");
+        }
+    }else{
+        M=INTEGER(Rdimx)[0];
+        N=INTEGER(Rdimx)[1];
+        if(M!=N)error("must be square matrix\n");
+    }
+    SEXP R_z;
+    PROTECT(R_z=allocMatrix(REALSXP,N,N));
+    double *z;
+    z=NUMERIC_POINTER(R_z);
+    memcpy(z, REAL(R_A), sizeof(double)*N * N);
+    matinv(z,N);
+    UNPROTECT(3);
+    return(R_z);
+}
+
+//test speed in R
+
+
+
+
+
+
+
 SEXP Rdeterminant(SEXP Ain, SEXP R_useLog){
 	PROTECT(Ain=AS_NUMERIC(Ain));
 	int n=INTEGER(getAttrib(Ain,R_DimSymbol))[0];
