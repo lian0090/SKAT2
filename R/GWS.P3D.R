@@ -2,7 +2,7 @@
 #It is not exactly the same as that from emma, due to the small difference in estimating variance components. 
 #If I use the same variance component from emma to put into getDL, I will get exactly the same pvalue 
 #Population structure previously determined. 
-getP3D0=function(y,X0,G){
+P3D.NULL=function(y,X0,G){
 	out=list()
 	if(class(G)=="matrix"){
 		cat("To save computation time, it is better to supply eigenG instead of G \n");
