@@ -7,7 +7,7 @@ P3D.NULL=function(y,X0,G){
 	if("matrix" %in% class(G)){
 		cat("To save computation time, it is better to supply eigenG instead of G \n");
 		eigenG=getEigenG(G);
-	}else if( !("eigenG" %in% class(G))){
+	}else if( ("eigenG" %in% class(G))){
 		eigenG=G;
 	}else{
 		stop("G must be a matrix or eigenG")
@@ -71,7 +71,7 @@ singleSNP=function(y,X0,Xt,Var=NULL,G,method="LR",P3D=T,lm0=NULL){
 	if("matrix" %in% class(G)){
 		cat("To save computation time, it is better to supply eigenG instead of G \n");
 		eigenG=getEigenG(G);
-	}else if( !("eigenG" %in% class(G))){
+	}else if( ("eigenG" %in% class(G))){
 		eigenG=G;
 	}else{
 		stop("G must be a matrix or eigenG")
