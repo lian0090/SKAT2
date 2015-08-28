@@ -66,16 +66,8 @@ P3D.NULL=function(y,X0,G){
  	     return(list(Me=Me,p.value=p.value))
  	   	}
 
-
-singleSNP=function(y,X0,Xt,Var=NULL,G,method="LR",P3D=T,lm0=NULL){
-	if("matrix" %in% class(G)){
-		cat("To save computation time, it is better to supply eigenG instead of G \n");
-		eigenG=getEigenG(G);
-	}else if( ("eigenG" %in% class(G))){
-		eigenG=G;
-	}else{
-		stop("G must be a matrix or eigenG")
-	}
+##this function will not be exported. therefore, having eigenG as parameter is fine. 
+singleSNP=function(y,X0,Xt,Var=NULL,eigenG,method="LR",P3D=T,lm0=NULL){
 	##Var is the variance for the NULL model, without fitting the test SNPs 
     X0=as.matrix(X0)
     Xt=as.matrix(Xt)
