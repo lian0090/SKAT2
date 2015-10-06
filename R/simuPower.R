@@ -393,7 +393,11 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
       #####start single SNP test
       if(!is.null(singleSNPtest)){
         
-        tSNP.fit0Var=P3D.NULL(y=y,X0=X,eigenG)$Var
+        if(!is.null(eigenG)){
+        	tSNP.fit0Var=P3D.NULL(y=y,X0=X,eigenG)$Var
+        }else{
+        	tSNP.fit0Var=NULL
+        }
         
         ##if marker is non-polymorphic, fixed effect will not work!!	
         pmt.Me1=proc.time()[3]
