@@ -364,12 +364,12 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
       if(!is.null(windowtest)){
         if(is.null(GxE)){
           ptm=proc.time()[3]	
-          out=testWindow(y,X=X,Zt=Zs$Z[,testID.Zs,drop=F],G=eigenG,removeZtFromG=removeZtFromG)
+          out=testWindow(y,X=X,Zt=Zs$Z[,testID.Zs,drop=F],eigenG=eigenG,removeZtFromG=removeZtFromG)
                }else{
           ptm=proc.time()[3]
           ##For GxE, you should not removeZtFromG, because when you remove the interaction matrix from G, you also removed the incidence
           #matrix for the fixed effects. The p-value in this case is 0. But I do not know why the p-value should be 0.
-          out=testWindow(y,X=X,W=list(Zs$Z[,testID.Zs,drop=F]),Zt=Zx$Z[,testID.Zx,drop=F],G=eigenG,removeZtFromG=F)
+          out=testWindow(y,X=X,W=list(Zs$Z[,testID.Zs,drop=F]),Zt=Zx$Z[,testID.Zx,drop=F],eigenG=eigenG,removeZtFromG=F)
         }
         ptm2=proc.time()[3]
         
@@ -418,10 +418,10 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
               #cat(Zxj,"\n")
               nZxj=ncol(Zxj)	
               test=c((ncol(X)+ncol(Zsj))+(1:nZxj))
-              p.value=singleSNP.P3D(y,X0=cbind(X,Zsj),Xt=Zxj,Var=tSNP.fit0,eigenG=eigenG,method=singleSNPtest)$p.value *Me
+              p.value=singleSNP(y,X0=cbind(X,Zsj),Xt=Zxj,Var=tSNP.fit0,eigenG=eigenG,method=singleSNPtest)$p.value *Me
             }else{
               test=c(ncol(X)+c(1:ncol(Zsj)))	
-              p.value=singleSNP.P3D(y,X0=X,Xt=Zsj,Var=tSNP.fit0,eigenG=eigenG,method=singleSNPtest)$p.value *Me	
+              p.value=singleSNP(y,X0=X,Xt=Zsj,Var=tSNP.fit0,eigenG=eigenG,method=singleSNPtest)$p.value *Me	
             }
           }else p.value=rep(NA,n.singleSNPtest)
           
