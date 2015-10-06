@@ -2,8 +2,11 @@
 #It is not exactly the same as that from emma, due to the small difference in estimating variance components. 
 #If I use the same variance component from emma to put into getDL, I will get exactly the same pvalue 
 #Population structure previously determined. 
-P3D.NULL=function(y,X0,G){
-	out=list()
+##perform association mapping for provided markers while correcting for multiple test.
+ GWAS.P3D=function(y,Xt,X0=NULL,G,multipleCorrection=T)
+ { 
+ 	#when X0 is NULL, a intercept will be automatically included. 
+ 	if(is.null(X0)){X0=matrix(1,nrow=length(y),ncol=1)}
 	if("matrix" %in% class(G)){
 		cat("To save computation time, it is better to supply eigenG instead of G \n");
 		eigenG=getEigenG(G);
@@ -35,36 +38,21 @@ P3D.NULL=function(y,X0,G){
 	fit0<-fit.optim(par=Var,fn=neg2Log,logVar=T,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,d1=d1,n=n)
 	Var=fit0$par
 	names(Var)=c("var_e","var_g")
-	out$y=y;
-	out$X0=X0;
-	out$eigenG=eigenG;
-	out$Var=Var;
-	class(out)=c("list","P3D0")
-	return(out)
-}
 
-##perform association mapping for provided markers while correcting for multiple test.
- GWAS.P3D=function(Xt,P3D0,multipleCorrection=T)
- {
- 	 	 if(! ("P3D0" %in% class(P3D0))) stop("P3D0 must be the model fitting from getP3D0")
- 	 	 
- 	 	 Xt=as.matrix(Xt)
- 	   	 X0=as.matrix(P3D0$X0)
- 	   	 y=P3D0$y
- 	   	 Var=P3D0$Var
- 	   	 eigenG=P3D0$eigenG
- 	   	 if(multipleCorrection==T){
- 	   	 	Me=Meff(Xt)
- 	   	 	cat("effective number of test is ",Me,"\n")
- 	   	 	}else{
+
+    Xt=as.matrix(Xt)
+ 	if(multipleCorrection==T){
+ 	   	 Me=Meff(Xt)
+ 	   	 cat("effective number of test is ",Me,"\n")
+ 	   	}else{
  	   	 		Me=1
- 	   	 	}
+ 	   	 }
  	   	 p.value=rep(NA,ncol(Xt))
        	 
  	   	 p.value=apply(Xt,2,function(a){
- 	   	 	singleSNP.P3D(y,X0=X0,Xt=a,Var=Var,eigenG=eigenG,method="LR")$p.value*Me
+ 	   	 	singleSNP(y,X0=X0,Xt=a,Var=Var,eigenG=eigenG,method="LR")$p.value*Me
  	   	 })
- 	     return(list(Me=Me,p.value=p.value))
+ 	     return(list(Me=Me,p.value=p.value,H0var=Var))
 }
 
 ##this function will not be exported. therefore, having eigenG as parameter is fine. 
@@ -173,18 +161,6 @@ singleSNP=function(y,X0,Xt,Var=NULL,eigenG,method="LR",P3D=T,lm0=NULL){
 }
 
 
-##backward compatability
-singleSNP.P3D=function(y,X0,Xt,Var,eigenG,method="LR"){
- #X0: incidence matrix for fixed effects not being tested
- #Xt: incidence matrix for the marker or for the GxE  to be tested	
- #Var: population variance components: var_e and var_g 
- #methods: "t" for t-test, "LR" for likelihood ratio test, default is likelihood ratio test
- 	#use LR test if length.test>1
- 	out=singleSNP(y=y,X0=X0,Xt=Xt,Var=Var,eigenG=eigenG,method=method)
-    return(out)
- }
 
-
- 
  	
  
