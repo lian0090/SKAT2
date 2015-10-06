@@ -393,7 +393,7 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
       #####start single SNP test
       if(!is.null(singleSNPtest)){
         
-        tSNP.fit0=P3D.NULL(y,X0=X,eigenG)
+        tSNP.fit0Var=P3D.NULL(y=y,X0=X,eigenG=eigenG)$Var
         
         ##if marker is non-polymorphic, fixed effect will not work!!	
         pmt.Me1=proc.time()[3]
@@ -412,16 +412,12 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
             if(!is.null(GxE)){
               col.Zxj=which(Zx.colID.Zs==j)
               Zxj=Zx$Z[,col.Zxj,drop=F]
-              #cat("col.Zs",j,"\n")
-              #cat(Zsj,"\n")
-              #cat("col.Zxj",col.Zxj,"\n")
-              #cat(Zxj,"\n")
               nZxj=ncol(Zxj)	
               test=c((ncol(X)+ncol(Zsj))+(1:nZxj))
-              p.value=singleSNP(y,X0=cbind(X,Zsj),Xt=Zxj,Var=tSNP.fit0,eigenG=eigenG,method=singleSNPtest)$p.value *Me
+              p.value=singleSNP(y,X0=cbind(X,Zsj),Xt=Zxj,Var=tSNP.fit0Var,eigenG=eigenG,method=singleSNPtest)$p.value *Me
             }else{
               test=c(ncol(X)+c(1:ncol(Zsj)))	
-              p.value=singleSNP(y,X0=X,Xt=Zsj,Var=tSNP.fit0,eigenG=eigenG,method=singleSNPtest)$p.value *Me	
+              p.value=singleSNP(y,X0=X,Xt=Zsj,Var=tSNP.fit0Var,eigenG=eigenG,method=singleSNPtest)$p.value *Me	
             }
           }else p.value=rep(NA,n.singleSNPtest)
           

@@ -3,10 +3,8 @@
 #If I use the same variance component from emma to put into getDL, I will get exactly the same pvalue 
 #Population structure previously determined. 
 ##perform association mapping for provided markers while correcting for multiple test.
- GWAS.P3D=function(y,Xt,X0=NULL,G,multipleCorrection=T)
- { 
- 	#when X0 is NULL, a intercept will be automatically included. 
- 	if(is.null(X0)){X0=matrix(1,nrow=length(y),ncol=1)}
+P3D.NULL=function(y,X0,G){
+	out=list()
 	if("matrix" %in% class(G)){
 		cat("To save computation time, it is better to supply eigenG instead of G \n");
 		eigenG=getEigenG(G);
@@ -38,9 +36,28 @@
 	fit0<-fit.optim(par=Var,fn=neg2Log,logVar=T,tU1y=tU1y,tU1X=tU1X,tXX=tXX,tXy=tXy,tyy=tyy,d1=d1,n=n)
 	Var=fit0$par
 	names(Var)=c("var_e","var_g")
+	out$y=y;
+	out$X0=X0;
+	out$eigenG=eigenG;
+	out$Var=Var;
+	out$whichNa=whNA;
+	class(out)=c("list","P3D0")
+	return(out)
+}
 
-
-    Xt=as.matrix(Xt)
+ GWAS.P3D=function(y,Xt,X0=NULL,G,multipleCorrection=T,P3D0=NULL)
+ { 
+ #P3D0 allows previously defined P3D0, this might be useful if you are constantly testing you code for small number of markers  
+ 	if(is.null(P3D0)){
+	P3D0=P3D.NULL(y,X0,G)
+    }
+    X0=as.matrix(P3D0$X0)
+ 	y=P3D0$y
+ 	Var=P3D0$Var
+ 	eigenG=P3D0$eigenG
+	whichNa=P3D0$whichNa
+	if(length(whichNa)>0)Xt=as.matrix(Xt)[-whichNa,]
+    
  	if(multipleCorrection==T){
  	   	 Me=Meff(Xt)
  	   	 cat("effective number of test is ",Me,"\n")
