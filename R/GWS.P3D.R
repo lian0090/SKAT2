@@ -44,7 +44,8 @@ P3D.NULL=function(y,X0,G){
 }
 
 ##perform association mapping for provided markers while correcting for multiple test.
- GWAS.P3D=function(Xt,P3D0,multipleCorrection=T){
+ GWAS.P3D=function(Xt,P3D0,multipleCorrection=T)
+ {
  	 	 if(! ("P3D0" %in% class(P3D0))) stop("P3D0 must be the model fitting from getP3D0")
  	 	 
  	 	 Xt=as.matrix(Xt)
@@ -61,14 +62,15 @@ P3D.NULL=function(y,X0,G){
  	   	 p.value=rep(NA,ncol(Xt))
        	 
  	   	 p.value=apply(Xt,2,function(a){
- 	   	 	singleSNP.P3D(y,X0=X0,Xt=a,Var=Var,eigenG=eigenG,method="LR")$p.value*Me})
-
+ 	   	 	singleSNP.P3D(y,X0=X0,Xt=a,Var=Var,eigenG=eigenG,method="LR")$p.value*Me
+ 	   	 })
  	     return(list(Me=Me,p.value=p.value))
- 	   	}
+}
 
 ##this function will not be exported. therefore, having eigenG as parameter is fine. 
 singleSNP=function(y,X0,Xt,Var=NULL,eigenG,method="LR",P3D=T,lm0=NULL){
 	##Var is the variance for the NULL model, without fitting the test SNPs 
+	##allows NULL eigenG, in this case, the directly use lm function to fit the model. 
     X0=as.matrix(X0)
     Xt=as.matrix(Xt)
   if(any(is.na(y))){

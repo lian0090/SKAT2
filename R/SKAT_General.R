@@ -1,7 +1,3 @@
-
-
-
-
 fit.optim=function(par,fn,logVar=T,tauRel=NULL, optimizer="bobyqa",...){
 	namesPar=names(par)
 if(is.null(namesPar)){stop("par must have names")}
