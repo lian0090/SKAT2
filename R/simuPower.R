@@ -206,12 +206,11 @@ simuBeta<-function(Z,k=NULL, Type="Normal", MAF=NULL,causalID=NULL,Causal.Ratio=
 }
 
 
-
 ##simulate power and size for GxE
 ##plink returns G matrix as the mena variance of marker genotype. 
 ##if a subset of individual is selected, will eigenG work for a smaller number of individuals?
 ##only test the autosome SNPs
-simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NULL,setsSNPID=NULL,eigenG,kg=1,ks=0.2,kx=0.1,winsize=20,seed=1,nQTL=0,Xf,Xe,windowtest=c("SKAT","Score",NULL)[1],saveAt=NULL,singleSNPtest=c("LR","t")[1],GxE=c("Normal","LogMAF","FixedMAF","Multiply","Equal")[4],betaType=c("Normal","LogMAF","FixedMAF","Equal")[1],MAF=NULL,Causal.MAF.Cutoff=0.03,openLowerTestMAF=NULL,openUpperTestMAF=NULL,Sign=0,removeZtFromG=T){
+simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NULL,setsSNPID=NULL,eigenG=NULL,kg=1,ks=0.2,kx=0.1,winsize=20,seed=1,nQTL=0,Xf,Xe,windowtest=c("SKAT","Score",NULL)[1],saveAt=NULL,singleSNPtest=c("LR","t")[1],GxE=c(NA,"Normal","LogMAF","FixedMAF","Multiply","Equal")[4],betaType=c("Normal","LogMAF","FixedMAF","Equal")[1],MAF=NULL,Causal.MAF.Cutoff=0.03,openLowerTestMAF=NULL,openUpperTestMAF=NULL,Sign=0,removeZtFromG=T){
   #geno:  matrix, or gds.class object, snps in columns and individual in rows.
   #SNPstart: start position of snp to be tested
   #SNPend: end position of snp to be tested
@@ -250,13 +249,13 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
     "#nQTL=",nQTL, "\n",
     "#n.windowtest=",n.windowtest,"\n",
     "#saveAt is ",saveAt,"\n")
-  file.create(saveAt.Windowtest,F)
-  file.create(saveAt.betaZs,F)
-  file.create(saveAt.betaZx,F)
-  for(k in 1:n.singleSNPtest){
-    file.create(saveAt.SingleSNPtest[k],F)
-  }
-  N=nrow(eigenG$U1)
+  	file.create(saveAt.Windowtest,F)
+  	file.create(saveAt.betaZs,F)
+  	file.create(saveAt.betaZx,F)
+  	for(k in 1:n.singleSNPtest){
+    	file.create(saveAt.SingleSNPtest[k],F)
+  	}
+  N=nrow(Xf)
   
   if(is.null(setsSNPID)){
   	#get the index of SNPs in each sets
@@ -268,18 +267,24 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
   pvalue.window=matrix(NA,n.windowtest,nSNPs)
   pvalue.SingleSNP=matrix(NA,n.singleSNPtest,nSNPs)
  
-  
-  if(nQTL>0){
-    ug=simu_ug.QTL(SNPstart,SNPend,geno,nQTL,kg=kg,Sign=Sign)
-  }else{
-    ug=simu_ug.eigenG(eigenG,kg=kg)	
-  }  
-  
+ ##fixed effects
   X=cbind(Xf,Xe)
   beta_x=rep(0.5/ncol(X),ncol(X)) 
   beta_xe=beta_x[(ncol(Xf)+1):ncol(X)] 
+ ##residuals 
   e=rnorm(N,0,1)
-  y0=X%*%beta_x+ug+e
+  
+  ##simulate genetic background
+  if(!is.null(eigenG)){
+  	if(nQTL>0){
+    	ug=simu_ug.QTL(SNPstart,SNPend,geno,nQTL,kg=kg,Sign=Sign)
+  	}else{
+    	ug=simu_ug.eigenG(eigenG,kg=kg)	
+  	}
+    y0=X%*%beta_x+ug+e  
+  }else{
+  	y0=X%*%beta_x+e
+  }
   
   #commented out on June 25,2015. P3D.NULL should fit the true phenotypes instead of y0
   # if(!is.null(singleSNPtest)){
@@ -345,7 +350,7 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
     if(p.testZs==0){
       #this should be changed, if Zs is not tested, this does not mean it is not causal.  
       cat(rep(NA,n.windowtest),"\n",file=saveAt.Windowtest,append=T)	
-           if(!is.null(GxE)){
+      if(!is.null(GxE)){
         for(k in 1:n.singleSNPtest) {cat(rep(NA,p.Zs*ncol(Xe)),"\n",file=saveAt.SingleSNPtest[k],append=T)}
       }
       else{
@@ -359,12 +364,12 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
       if(!is.null(windowtest)){
         if(is.null(GxE)){
           ptm=proc.time()[3]	
-          out=testWindow(y,X=X,Zt=Zs$Z[,testID.Zs,drop=F],eigenG=eigenG,removeZtFromG=removeZtFromG)
+          out=testWindow(y,X=X,Zt=Zs$Z[,testID.Zs,drop=F],G=eigenG,removeZtFromG=removeZtFromG)
                }else{
           ptm=proc.time()[3]
           ##For GxE, you should not removeZtFromG, because when you remove the interaction matrix from G, you also removed the incidence
           #matrix for the fixed effects. The p-value in this case is 0. But I do not know why the p-value should be 0.
-          out=testWindow(y,X=X,W=list(Zs$Z[,testID.Zs,drop=F]),Zt=Zx$Z[,testID.Zx,drop=F],eigenG=eigenG,removeZtFromG=F)
+          out=testWindow(y,X=X,W=list(Zs$Z[,testID.Zs,drop=F]),Zt=Zx$Z[,testID.Zx,drop=F],G=eigenG,removeZtFromG=F)
         }
         ptm2=proc.time()[3]
         
