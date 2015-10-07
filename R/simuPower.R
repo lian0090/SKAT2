@@ -449,10 +449,25 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
      setStarti=setStarti+p.Zx
      }
   } 
-  results=list(pvalue.SingleSNP=pvalue.SingleSNP,pvalue.window=pvalue.window)
-    saveRDS(results,file=file.path(saveAt,"power.rds"))  
-return(results)
+  #results=list(pvalue.SingleSNP=pvalue.SingleSNP,pvalue.window=pvalue.window)
+  #saveRDS(results,file=file.path(saveAt,"pvalues.rds"))  
+  out=get_results(saveAt=saveAt,windowtest=c("SKAT","Score"),singleSNPtest=c("LR"))
+  saveRDS(out,file=file.path(saveAt,"results.rds"))
+  poweri=getPower(p.window=out$p.window,p.singleSNP=out$p.singleSNP,beta=out$beta.Zx,alpha=0.05)
+  saveRDS(poweri,file=file.path(saveAt,"poweri.rds"))
+  return(poweri)
 }
+
+##do not put function argument as na.strings=na.strings in function definition
+readLinesListf=function(con,split="\\s+",na.strings){
+    dat=lapply(strsplit(readLines(con),split=split),function(a){
+      whichNa=which(a %in% na.strings)
+      if(length(whichNa)>0)a[whichNa]=NA;
+      a=as.numeric(a);
+      return(a)
+    })
+    return(dat)
+  }
 
 get_results=function(saveAt,windowtest,singleSNPtest,na.strings="NA"){
   out=list()
@@ -465,22 +480,15 @@ get_results=function(saveAt,windowtest,singleSNPtest,na.strings="NA"){
   saveAt.SingleSNPtest=file.path(saveAt,paste("SingleSNP_",singleSNPtest,".dat",sep=""))
   saveAt.betaZs=file.path(saveAt,"betaZs.dat")
   saveAt.betaZx=file.path(saveAt,"betaZx.dat")
-  readLinesListf=function(con,split="\\s+",na.strings = na.strings){
-    dat=lapply(strsplit(readLines(con),split=split),function(a){
-      a[which(a %in% na.strings)]=NA;
-      a=as.numeric(a);
-      return(a)
-    })
-    return(dat)
-  }
+  
   p.window=scan(saveAt.Windowtest,comment="#",na.strings=na.strings)
   out$p.window=matrix(p.window,ncol=n.windowtest,byrow=T)
   colnames(out$p.window)=windowtest
   for(i in 1:n.singleSNPtest){
-    out$p.singleSNP[[i]]=readLinesListf(saveAt.SingleSNPtest[i])
+    out$p.singleSNP[[i]]=readLinesListf(saveAt.SingleSNPtest[i],na.strings=na.strings)
   }
-  out$beta.Zs=readLinesListf(saveAt.betaZs)
-  out$beta.Zx=readLinesListf(saveAt.betaZx)
+  out$beta.Zs=readLinesListf(saveAt.betaZs,na.strings=na.strings)
+  out$beta.Zx=readLinesListf(saveAt.betaZx,na.strings=na.strings)
   return(out)
 }
 
