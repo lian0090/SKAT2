@@ -456,7 +456,7 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
   if(!is.null (GxE)){
   	poweri=getPower(p.window=out$p.window,p.singleSNP=out$p.singleSNP,beta=out$beta.Zx,alpha=0.05)
   	}else{
-  	poweri=getPower(p.window=out$p.window,p.singleSNP=out$p.singleSNP,beta=out$beta.Zx,alpha=0.05)	
+  	poweri=getPower(p.window=out$p.window,p.singleSNP=out$p.singleSNP,beta=out$beta.Zs,alpha=0.05)	
   		
   	}
   	
