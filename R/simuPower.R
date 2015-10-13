@@ -453,7 +453,13 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
   #saveRDS(results,file=file.path(saveAt,"pvalues.rds"))  
   out=get_results(saveAt=saveAt,windowtest=c("SKAT","Score"),singleSNPtest=c("LR"))
   saveRDS(out,file=file.path(saveAt,"results.rds"))
-  poweri=getPower(p.window=out$p.window,p.singleSNP=out$p.singleSNP,beta=out$beta.Zx,alpha=0.05)
+  if(!is.null (GxE)){
+  	poweri=getPower(p.window=out$p.window,p.singleSNP=out$p.singleSNP,beta=out$beta.Zx,alpha=0.05)
+  	}else{
+  	poweri=getPower(p.window=out$p.window,p.singleSNP=out$p.singleSNP,beta=out$beta.Zx,alpha=0.05)	
+  		
+  	}
+  	
   saveRDS(poweri,file=file.path(saveAt,"poweri.rds"))
   return(poweri)
 }
