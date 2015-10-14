@@ -33,6 +33,7 @@ getSetsSNPID<-
 
 
 ##return the index for snps in each sets
+##sample without replacement the consecutive sets. 
 getSetsSNPID.StartEnd<-
   function(winsize,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NULL){
     ##get sets Chr information
@@ -161,6 +162,9 @@ Get_testSNPsMAF<-function(MAF,openLowerTestMAF=0,openUpperTestMAF=NULL){
 
 
 ##MinMAF: minimum MAF frequency allowed for test. If MAF<MinMAF,this marker is not included in association test
+
+##
+
 simuBeta<-function(Z,k=NULL, Type="Normal", MAF=NULL,causalID=NULL,Causal.Ratio=1,Causal.MAF.Cutoff=0.03,Sign=0,MaxValue=1.6,scaleZ=T)
 {
   if(!(Type %in% c("Normal","LogMAF","FixedMAF","Equal"))){
