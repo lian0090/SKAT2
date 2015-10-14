@@ -1,3 +1,4 @@
+
 #Get columwise multiplication
 #if ncol(Z2)=p, there are p chunks of Z1*Z2[,j] 
 colmult=function(Z1,Z2){
@@ -210,8 +211,9 @@ simuBeta<-function(Z,k=NULL, Type="Normal", MAF=NULL,causalID=NULL,Causal.Ratio=
 ##plink returns G matrix as the mena variance of marker genotype. 
 ##if a subset of individual is selected, will eigenG work for a smaller number of individuals?
 ##only test the autosome SNPs
-simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NULL,setsSNPID=NULL,eigenG=NULL,kg=1,ks=0.2,kx=0.1,winsize=20,seed=1,nQTL=0,Xf,Xe,windowtest=c("SKAT","Score",NULL)[1],saveAt=NULL,singleSNPtest=c("LR","t")[1],GxE=c(NA,"Normal","LogMAF","FixedMAF","Multiply","Equal")[4],betaType=c("Normal","LogMAF","FixedMAF","Equal")[1],MAF=NULL,Causal.MAF.Cutoff=0.03,openLowerTestMAF=NULL,openUpperTestMAF=NULL,Sign=0,removeZtFromG=T){
+simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NULL,setsSNPID=NULL,eigenG=NULL,kg=1,ks=0.2,kx=0.1,winsize=20,seed=1,nQTL=0,Xf,Xe,windowtest=c("SKAT","Score",NULL)[1],saveAt=NULL,singleSNPtest=c("LR","t")[1],GxE=c(NA,"Normal","LogMAF","FixedMAF","Multiply","Equal")[4],betaType=c("Normal","LogMAF","FixedMAF","Equal")[1],Causal.Ratio=1, MAF=NULL,Causal.MAF.Cutoff=0.03,openLowerTestMAF=NULL,openUpperTestMAF=NULL,Sign=0,removeZtFromG=T){
   #geno:  matrix, or gds.class object, snps in columns and individual in rows.
+  #Causal.MAF.Cutoff: only SNPs has MAF  less than this is considered as causal SNP
   #SNPstart: start position of snp to be tested
   #SNPend: end position of snp to be tested
   #nsets: number of sets for simulation
@@ -224,6 +226,7 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
   #windowtest
   #singleSNPtest: LR, t-test, or NULL
   ##begin subsetting populations
+  ## betaType: "LogMAF","FixedMAF" used for rare variants. causal variants will be selected based on MAF.
   set.seed(seed)
   if(is.null(saveAt)){
     saveAt=paste("ks",ks,"kx",kx,sep="")
@@ -299,7 +302,7 @@ simuPower=function(geno,SNPstart=NULL,SNPend=NULL,chr=NULL,testchr=NULL,nsets=NU
     setsSNPIDi=setsSNPID[[i]]
     Zs=geno[,setsSNPIDi]
     MAFi=MAF[setsSNPIDi]
-    Zs=simuBeta(Z=Zs,k=ks,Type=betaType,MAF=MAFi,Causal.MAF.Cutoff=Causal.MAF.Cutoff,MaxValue=1.6,Sign=Sign) 
+    Zs=simuBeta(Z=Zs,k=ks,Type=betaType,MAF=MAFi,Causal.MAF.Cutoff=Causal.MAF.Cutoff,MaxValue=1.6,Sign=Sign,Causal.Ratio=Causal.Ratio)
     if(betaType %in% c("LogMAF","FixedMAF")){
       testID.Zs=Get_testSNPsMAF(MAF=MAFi,openLowerTestMAF=openLowerTestMAF,openUpperTestMAF=openUpperTestMAF)
     }else{
