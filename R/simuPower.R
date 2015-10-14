@@ -165,7 +165,7 @@ Get_testSNPsMAF<-function(MAF,openLowerTestMAF=0,openUpperTestMAF=NULL){
 
 ##
 
-simuBeta<-function(Z,k=NULL, Type="Normal", MAF=NULL,causalID=NULL,Causal.Ratio=1,Causal.MAF.Cutoff=0.03,Sign=0,MaxValue=1.6,scaleZ=T)
+simuBeta<-function(Z,k=NULL, Type="Normal", MAF=NULL,causalID=NULL,Causal.Ratio=1,Causal.MAF.Cutoff=0.03,Sign=0,MaxValue=1.6,centerZ=T,scaleZ=T)
 {
   if(!(Type %in% c("Normal","LogMAF","FixedMAF","Equal"))){
     stop("simuBeta: Type must be in Normal, LogMAF, FixedMAF, Equal")
@@ -177,7 +177,7 @@ simuBeta<-function(Z,k=NULL, Type="Normal", MAF=NULL,causalID=NULL,Causal.Ratio=
   n.causal=length(causalID)
   beta=rep(0,ncol(Z))
   Z=meanImpute(Z)
-  Z=scale(Z,T,scale=scaleZ)
+  Z=scale(Z,centerZ,scale=scaleZ)
   if(n.causal>0){
     Z_causal=Z[,causalID,drop=F]
     if(Type=="Normal"){
