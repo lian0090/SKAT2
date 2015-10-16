@@ -622,9 +622,9 @@ simu.XF_R = function(geno, setsSNPID, MAF, betaType = c("LogMAF", "FixedMAF")[1]
 		obj <- SKAT_Null_Model(y ~ -1 + X, out_type = "C")
 		p.SKAT = SKAT(Z = Zs$Z, obj, weights = rep(1, ncol(Zs$Z)), is_check_genotype = F)$p.value
 	}
-	out = data.frame(Causal.MAF.Cutoff, Causal.Ratio, Sign, p.SKAT, outWindow$p.SKAT$p.value, outWindow$p.Score, n.causal, length(setsSNPID), 
-		outSingleSNP$Me, min(outSingleSNP$p.value["LR", ]), min(outSingleSNP$p.value["t", ]))
-	colnames(out) = c("Causal.MAF.Cutoff", "Causal.Ratio", "Sign", "SKAT", "SKAT_lian", "Score", "n.causal", "windowSize", "Me", "SingleSNP_LR", 
+	out = data.frame(Causal.MAF.Cutoff, Causal.Ratio, Sign, n.causal, length(setsSNPID), 
+		outSingleSNP$Me, p.SKAT, outWindow$p.SKAT$p.value, outWindow$p.Score, min(outSingleSNP$p.value["LR", ]), min(outSingleSNP$p.value["t", ]))
+	colnames(out) = c("Causal.MAF.Cutoff", "Causal.Ratio", "Sign",  "n.causal", "windowSize", "Me", "SKAT", "SKAT_lian", "Score", "SingleSNP_LR", 
 		"SingleSNP_t")
 	out
 }
