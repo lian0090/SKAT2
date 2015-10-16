@@ -61,7 +61,7 @@ P3D.NULL=function(y,X0=NULL,G=NULL){
     return(out)
 }
 
-GWAS.P3D=function(y,Xt,X0=NULL,G=NULL,multipleCorrection=T,P3D0=NULL)
+GWAS.P3D=function(y,Xt,X0=NULL,G=NULL,multipleCorrection=T,P3D0=NULL,method="LR")
 { 
 #P3D0 allows previously defined P3D0, this might be useful if you are constantly testing you code for small number of markers  
   if(is.null(P3D0)){
@@ -85,7 +85,7 @@ if(length(whichNa)>0)Xt=Xt[-whichNa,]
   p.value=rep(NA,ncol(Xt))
 
     p.value=apply(Xt,2,function(a){
-        singleSNP(y,X0=X0,Xt=a,Var=Var,eigenG=eigenG,method="LR",lm0=lm0)$p.value*Me
+        singleSNP(y,X0=X0,Xt=a,Var=Var,eigenG=eigenG,method=method,lm0=lm0)$p.value*Me
         })
   return(list(Me=Me,p.value=p.value,H0var=Var))
 }

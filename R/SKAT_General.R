@@ -248,15 +248,19 @@ testZ=function(y,X,W=NULL,tauRel=NULL,Zt,eigenZd,windowtest,tU1X=NULL,tU1y=NULL,
   			s2 = summary(mod)$sigma**2
   			Q=sum(crossprod(resid,Zt)^2)/s2/2
   			tXZt=crossprod(X,Zt)
-  			W.1=crossprod(Zt) - t(tXZt) %*% solve(crossprod(X)) %*% tXZt 
-  			lambda=eigen(W.1/2,symmetric=TRUE, only.values = TRUE)$values
+  			W.1=(crossprod(Zt) - t(tXZt) %*% solve(crossprod(X)) %*% tXZt)/2
+  			lambda=eigen(W.1,symmetric=TRUE, only.values = TRUE)$values
 			lambda1=lambda
 			IDX1<-which(lambda >= 0)
 			# eigenvalue bigger than mean(lambda1[IDX1])/100000 
 			IDX2<-which(lambda1 > mean(lambda1[IDX1])/100000)
 			lambda<-lambda1[IDX2]
-			out$p.SKAT<-Get_PValue.Lambda(lambda, Q)   
-			out$p.Score=NA
+			varS=(sum(W.1^2)/(s2^2))/2
+			S=(Q-(sum(diag(W.1))))/s2
+			out$p.SKAT<-Get_PValue.Lambda(lambda, Q)
+			out$Q=Q
+			out$S=S   
+			out$p.Score=pnorm(S,mean=0,sd=sqrt(varS),lower.tail=F)
   			return(out)
   		}
   }
