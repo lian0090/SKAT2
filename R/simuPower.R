@@ -653,11 +653,12 @@ simu.XF_R = function(geno, setsSNPID, MAF, betaType = c("LogMAF", "FixedMAF")[1]
 }
 
 ##simulate XF only, with siganal to noise ratio
-simu.XF_StN = function(geno, setsSNPID, StN = 0.1, size = F, Causal.Ratio = 0.05, Sign = 0.5) {
+#geno is the genotypes for a window (this is much easier than pass the whole BEDMatrix to all the slaves, and much easier to select both rows and columns)
+simu.XF_StN = function(geno,StN = 0.1, size = F, Causal.Ratio = 0.05, Sign = 0.5) {
 	N = nrow(geno)
 	X = cbind(rnorm(N), rbinom(N, 1, 0.5))
 	beta_x = rep(0.5, ncol(X))
-	Zs = geno[, setsSNPID]
+	Zs = geno
 	if (!size) {
 		Zs = simuBeta(Z = Zs, k = 0.1, Type = "Normal", , MaxValue = 1.6, Sign = Sign, Causal.Ratio = Causal.Ratio, centerZ = F, scaleZ = F)
 		n.causal = Zs$n.causal
@@ -689,7 +690,7 @@ simu.XF_StN = function(geno, setsSNPID, StN = 0.1, size = F, Causal.Ratio = 0.05
 
 
 	N = nrow(geno)
-	out = data.frame(N = N, Causal.Ratio, Sign, n.causal, length(setsSNPID), Me, p.SKAT, p.SKAT_lian, p.Score, p.singleSNP.LR, p.singleSNP.t)
+	out = data.frame(N = N, Causal.Ratio, Sign, n.causal, ncol(geno), Me, p.SKAT, p.SKAT_lian, p.Score, p.singleSNP.LR, p.singleSNP.t)
 	colnames(out) = c("N", "Causal.Ratio", "Sign", "n.causal", "nVariants", "Me", "SKAT", "SKAT_lian", "Score", "SingleSNP_LR", "SingleSNP_t")
 
 	out
