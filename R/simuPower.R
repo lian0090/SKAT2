@@ -120,6 +120,8 @@ Get_BetaMAF <- function(Type, MAF, MaxValue = 1.6) {
 
 }
 
+##Get CausalSNPs for Normal or Equal variate with Causal.Ratio
+##Get CausalSNPs for LogMAF and FixedMAF variate with MAF cutoff and Causal.Ratio
 Get_CausalSNPs <- function(MAF, p, Type = c("Normal", "LogMAF", "FixedMAF", "Equal")[2], Causal.Ratio, Causal.MAF.Cutoff) {
 	if (Type == "Normal" | Type == "Equal") {
 		IDX = c(1:p)
@@ -146,7 +148,7 @@ if (length(IDX) > 1) {
 	return(re)
 }
 
-Get_testSNPsMAF <- function(MAF, openLowerTestMAF = 0, openUpperTestMAF = NULL) {
+Get_testSNPsMAF <- function(MAF, openLowerTestMAF = NULL, openUpperTestMAF = NULL) {
 	if (!is.null(openUpperTestMAF)) {
 		IDXu <- which(MAF < openUpperTestMAF)
 	} else {
@@ -170,8 +172,7 @@ Get_testSNPsMAF <- function(MAF, openLowerTestMAF = 0, openUpperTestMAF = NULL) 
 
 ##
 
-simuBeta <- function(Z, k = NULL, Type = "Normal", MAF = NULL, causalID = NULL, Causal.Ratio = 1, Causal.MAF.Cutoff = 0.03, Sign = 0, MaxValue = 1.6, 
-	centerZ = T, scaleZ = T) {
+simuBeta <- function(Z, k = NULL, Type = "Normal", MAF = NULL, causalID = NULL, Causal.Ratio = 1, Causal.MAF.Cutoff = 0.03, Sign = 0, MaxValue = 1.6, centerZ = T, scaleZ = T) {
 	if (!(Type %in% c("Normal", "LogMAF", "FixedMAF", "Equal"))) {
 		stop("simuBeta: Type must be in Normal, LogMAF, FixedMAF, Equal")
 	}
@@ -220,10 +221,9 @@ beta_causal = rep(k, ncol(Z_causal))
 ##plink returns G matrix as the mena variance of marker genotype. 
 ##if a subset of individual is selected, will eigenG work for a smaller number of individuals?
 ##only test the autosome SNPs
-simuPower = function(geno, SNPstart = NULL, SNPend = NULL, chr = NULL, testchr = NULL, nsets = NULL, setsSNPID = NULL, eigenG = NULL, kg = 1, 
-	ks = 0.2, kx = 0.1, winsize = 20, seed = 1, nQTL = 0, Xf, Xe, windowtest = c("SKAT", "Score", NULL)[1], saveAt = NULL, singleSNPtest = c("LR", 
-		"t")[1], GxE = c(NA, "Normal", "LogMAF", "FixedMAF", "Multiply", "Equal")[4], betaType = c("Normal", "LogMAF", "FixedMAF", "Equal")[1], 
-	Causal.Ratio = 1, MAF = NULL, Causal.MAF.Cutoff = 0.03, openLowerTestMAF = NULL, openUpperTestMAF = NULL, Sign = 0, removeZtFromG = T) {
+simuPower = function(geno, SNPstart = NULL, SNPend = NULL, chr = NULL, testchr = NULL, nsets = NULL, setsSNPID = NULL, eigenG = NULL, kg = 1, ks = 0.2, kx = 0.1, winsize = 20, seed = 1, 
+	nQTL = 0, Xf, Xe, windowtest = c("SKAT", "Score", NULL)[1], saveAt = NULL, singleSNPtest = c("LR", "t")[1], GxE = c(NA, "Normal", "LogMAF", "FixedMAF", "Multiply", "Equal")[4], betaType = c("Normal", 
+		"LogMAF", "FixedMAF", "Equal")[1], Causal.Ratio = 1, MAF = NULL, Causal.MAF.Cutoff = 0.03, openLowerTestMAF = NULL, openUpperTestMAF = NULL, Sign = 0, removeZtFromG = T) {
 	#geno:  matrix, or gds.class object, snps in columns and individual in rows.
 	#Causal.MAF.Cutoff: only SNPs has MAF  less than this is considered as causal SNP
 #SNPstart: start position of snp to be tested
@@ -259,8 +259,8 @@ set.seed(seed)
 	}
 
 
-	cat("#kg=", kg, "\n", "#ks=", ks, "\n", "#kx=", kx, "\n", "#nsets=", nsets, "\n", "#winsize=", winsize, "\n", "#nQTL=", nQTL, "\n", "#n.windowtest=", 
-		n.windowtest, "\n", "#saveAt is ", saveAt, "\n")
+	cat("#kg=", kg, "\n", "#ks=", ks, "\n", "#kx=", kx, "\n", "#nsets=", nsets, "\n", "#winsize=", winsize, "\n", "#nQTL=", nQTL, "\n", "#n.windowtest=", n.windowtest, "\n", "#saveAt is ", 
+		saveAt, "\n")
 	file.create(saveAt.Windowtest, F)
 	file.create(saveAt.betaZs, F)
 	file.create(saveAt.betaZx, F)
@@ -433,8 +433,7 @@ out = testWindow(y, X = X, W = list(Zs$Z[, testID.Zs, drop = F]), Zt = Zx$Z[, te
 							Zxj = Zx$Z[, col.Zxj, drop = F]
 							nZxj = ncol(Zxj)
 							test = c((ncol(X) + ncol(Zsj)) + (1:nZxj))
-							p.value = singleSNP(y, X0 = cbind(X, Zsj), Xt = Zxj, Var = tSNP.fit0Var, eigenG = eigenG, method = singleSNPtest)$p.value * 
-								Me
+							p.value = singleSNP(y, X0 = cbind(X, Zsj), Xt = Zxj, Var = tSNP.fit0Var, eigenG = eigenG, method = singleSNPtest)$p.value * Me
 						} else {
 							test = c(ncol(X) + c(1:ncol(Zsj)))
 							p.value = singleSNP(y, X0 = X, Xt = Zsj, Var = tSNP.fit0Var, eigenG = eigenG, method = singleSNPtest)$p.value * Me
@@ -597,35 +596,102 @@ getPower = function(p.window, p.singleSNP, beta, alpha) {
 }
 
 ##simulation by specific model
-simu.XF_R = function(geno, setsSNPID, MAF, betaType = c("LogMAF", "FixedMAF")[1], Causal.MAF.Cutoff = 0.03, Causal.Ratio = 0.05, Sign = 0.5, 
-	size = F) {
+simu.XF_R = function(geno, setsSNPID, MAF, betaType = c("LogMAF", "FixedMAF")[1], Causal.MAF.Cutoff = 0.03, Causal.Ratio = 0.05, Sign = 0.5, size = F) {
 	N = nrow(geno)
 	X = cbind(rnorm(N), rbinom(N, 1, 0.5))
 	beta_x = rep(0.5, ncol(X))
 	e = rnorm(N, 0, 1)
 	MAFi = MAF[setsSNPID]
 	Zs = geno[, setsSNPID]
+	testID.Zs = Get_testSNPsMAF(MAF = MAFi, openLowerTestMAF = NULL, openUpperTestMAF = Causal.MAF.Cutoff)
+	n.test = length(testID.Zs)
 	if (!size) {
-		Zs = simuBeta(Z = Zs, k = NULL, Type = betaType, MAF = MAFi, Causal.MAF.Cutoff = Causal.MAF.Cutoff, MaxValue = 1.6, Sign = Sign, Causal.Ratio = Causal.Ratio, 
-			centerZ = F, scaleZ = F)
-		y = X %*% beta_x + Zs$u + e
-		outWindow = testWindow(y, X = X, Zt = Zs$Z, eigenG = NULL)
+		Zs = simuBeta(Z = Zs, k = NULL, Type = betaType, MAF = MAFi, Causal.MAF.Cutoff = Causal.MAF.Cutoff, MaxValue = 1.6, Sign = Sign, Causal.Ratio = Causal.Ratio, centerZ = F, scaleZ = F)
+
+		n.causal = Zs$n.causal
+		if (n.test > 0) {
+			y = X %*% beta_x + Zs$u + e
+			Zs$Z = Zs$Z[, testID.Zs]
+			outWindow = GWAS.SW(y, X0 = X, Xt = Zs$Z, G = NULL)
+			outSingleSNP = GWAS.P3D(y = y, X0 = X, Xt = Zs$Z, multipleCorrection = T, G = NULL, method = c("LR", "t"))
+			obj <- SKAT_Null_Model(y ~ -1 + X, out_type = "C")
+			p.SKAT = SKAT(Z = Zs$Z, obj, weights = rep(1, ncol(Zs$Z)), is_check_genotype = F)$p.value
+			Me = outSingleSNP$Me
+			p.SKAT_lian = outWindow$p.SKAT$p.value
+			p.Score = outWindow$p.Score
+			p.singleSNP.LR = min(outSingleSNP$p.value["LR", ])
+			p.singleSNP.t = min(outSingleSNP$p.value["t", ])
+		} else {
+			Me = p.SKAT_lian = p.SKAT = p.Score = p.singleSNP.t = p.singleSNP.LR = NA
+		}
+	} else {
+		n.causal = 0
+		if (n.test > 0) {
+			y = X %*% beta_x + e
+			Zs = Zs[, testID.Zs]
+			outWindow = GWAS.SW(y, X0 = X, Xt = Zs, G = NULL)
+			outSingleSNP = GWAS.P3D(y = y, X0 = X, Xt = Zs, multipleCorrection = T, G = NULL, method = c("LR", "t"))
+
+			obj <- SKAT_Null_Model(y ~ -1 + X, out_type = "C")
+			p.SKAT = SKAT(Z = Zs, obj, weights = rep(1, ncol(Zs)), is_check_genotype = F)$p.value
+			Me = outSingleSNP$Me
+			p.SKAT_lian = outWindow$p.SKAT$p.value
+			p.Score = outWindow$p.Score
+			p.singleSNP.LR = min(outSingleSNP$p.value["LR", ])
+			p.singleSNP.t = min(outSingleSNP$p.value["t", ])
+		} else {
+			Me = p.SKAT_lian = p.SKAT = p.Score = p.singleSNP.t = p.singleSNP.LR = NA
+		}
+
+	}
+
+	N = nrow(geno)
+	out = data.frame(N = N, Causal.MAF.Cutoff, Causal.Ratio, Sign, n.causal, length(setsSNPID), n.test, Me, p.SKAT, p.SKAT_lian, p.Score, p.singleSNP.LR, p.singleSNP.t)
+	colnames(out) = c("N", "Causal.MAF.Cutoff", "Causal.Ratio", "Sign", "n.causal", "nVariants", "nMA", "Me", "SKAT", "SKAT_lian", "Score", "SingleSNP_LR", "SingleSNP_t")
+
+	out
+}
+
+##simulate XF only, with siganal to noise ratio
+simu.XF_StN = function(geno, setsSNPID, StN = 0.1, size = F, Causal.Ratio = 0.05, Sign = 0.5) {
+	N = nrow(geno)
+	X = cbind(rnorm(N), rbinom(N, 1, 0.5))
+	beta_x = rep(0.5, ncol(X))
+	Zs = geno[, setsSNPID]
+	if (!size) {
+		Zs = simuBeta(Z = Zs, k = 0.1, Type = "Normal", , MaxValue = 1.6, Sign = Sign, Causal.Ratio = Causal.Ratio, centerZ = F, scaleZ = F)
+		n.causal = Zs$n.causal
+		yhat = X %*% beta_x + Zs$u
+		vare = var(yhat)/StN
+		e = rnorm(0, sqrt(vare))
+		y = yhat + e
+		outWindow = GWAS.SW(y, X0 = X, Xt = Zs$Z, G = NULL)
 		outSingleSNP = GWAS.P3D(y = y, X0 = X, Xt = Zs$Z, multipleCorrection = T, G = NULL, method = c("LR", "t"))
 		obj <- SKAT_Null_Model(y ~ -1 + X, out_type = "C")
 		p.SKAT = SKAT(Z = Zs$Z, obj, weights = rep(1, ncol(Zs$Z)), is_check_genotype = F)$p.value
-		n.causal = Zs$n.causal
 	} else {
-		y = X %*% beta_x + e
-		outWindow = testWindow(y, X = X, Zt = Zs, eigenG = NULL)
-		outSingleSNP = GWAS.P3D(y = y, X0 = X, Xt = Zs, multipleCorrection = T, G = NULL, method = c("LR", "t"))
 		n.causal = 0
+		yhat = X %*% beta_x
+		vare = var(yhat)/StN
+		e = rnorm(0, sqrt(vare))
+		y = yhat + e
+		outWindow = GWAS.SW(y, X0 = X, Xt = Zs, G = NULL)
+		outSingleSNP = GWAS.P3D(y = y, X0 = X, Xt = Zs, multipleCorrection = T, G = NULL, method = c("LR", "t"))
 		obj <- SKAT_Null_Model(y ~ -1 + X, out_type = "C")
-		p.SKAT = SKAT(Z = Zs$Z, obj, weights = rep(1, ncol(Zs$Z)), is_check_genotype = F)$p.value
+		p.SKAT = SKAT(Z = Zs, obj, weights = rep(1, ncol(Zs)), is_check_genotype = F)$p.value
+
 	}
-	out = data.frame(Causal.MAF.Cutoff, Causal.Ratio, Sign, n.causal, length(setsSNPID), 
-		outSingleSNP$Me, p.SKAT, outWindow$p.SKAT$p.value, outWindow$p.Score, min(outSingleSNP$p.value["LR", ]), min(outSingleSNP$p.value["t", ]))
-	colnames(out) = c("Causal.MAF.Cutoff", "Causal.Ratio", "Sign",  "n.causal", "windowSize", "Me", "SKAT", "SKAT_lian", "Score", "SingleSNP_LR", 
-		"SingleSNP_t")
+	Me = outSingleSNP$Me
+	p.SKAT_lian = outWindow$p.SKAT$p.value
+	p.Score = outWindow$p.Score
+	p.singleSNP.LR = min(outSingleSNP$p.value["LR", ])
+	p.singleSNP.t = min(outSingleSNP$p.value["t", ])
+
+
+	N = nrow(geno)
+	out = data.frame(N = N, Causal.Ratio, Sign, n.causal, length(setsSNPID), Me, p.SKAT, p.SKAT_lian, p.Score, p.singleSNP.LR, p.singleSNP.t)
+	colnames(out) = c("N", "Causal.Ratio", "Sign", "n.causal", "nVariants", "Me", "SKAT", "SKAT_lian", "Score", "SingleSNP_LR", "SingleSNP_t")
+
 	out
 }
 

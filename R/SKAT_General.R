@@ -199,26 +199,7 @@ getEigenZd=function(Kd=NULL,Zd=NULL,precision=1e-5){
   return(out)
 }
 
-#A wrapper for testZ
-testWindow=function(y,X,Zt,eigenG=NULL,W=NULL,removeZtFromG=F,optimizer='bobyqa'){
-	##optimizing functions for solving variance components with REML. Either "bobyqa" or "optim",default is 'bobyqa', 
-		#W should be a list of all other incidence matrix for random effects 
-	#eigenG is produced by eigenZd
-	if(removeZtFromG==T){
-	W=c(W,list(Zt))
-	nw=length(W)
-	out=testZ(y,X,eigenZd=eigenG,Zt=Zt,W=W,tauRel=paste("tauw",nw,"=-taud",sep=""),windowtest=c("Score","SKAT"),optimizer=optimizer)
-	}else{
-		
-	out=testZ(y,X,eigenZd=eigenG,Zt=Zt,W=W,tauRel=NULL,windowtest=c("Score","SKAT"),optimizer=optimizer)	
-	}
-	return(out)
-}
-
-
-
       	
-
 
 testZ=function(y,X,W=NULL,tauRel=NULL,Zt,eigenZd,windowtest,tU1X=NULL,tU1y=NULL,tXX=NULL,tXy=NULL,tyy=NULL,logVar=T,optimizer="bobyqa"){
 	
