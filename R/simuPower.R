@@ -596,13 +596,12 @@ getPower = function(p.window, p.singleSNP, beta, alpha) {
 }
 
 ##simulation by specific model
-simu.XF_R = function(geno, setsSNPID, MAF, betaType = c("LogMAF", "FixedMAF")[1], Causal.MAF.Cutoff = 0.03, Causal.Ratio = 0.05, Sign = 0.5, size = F) {
+simu.XF_R = function(geno, MAF, betaType = c("LogMAF", "FixedMAF")[1], Causal.MAF.Cutoff = 0.03, Causal.Ratio = 0.05, Sign = 0.5, size = F) {
 	N = nrow(geno)
 	X = cbind(rnorm(N), rbinom(N, 1, 0.5))
 	beta_x = rep(0.5, ncol(X))
 	e = rnorm(N, 0, 1)
-	MAFi = MAF[setsSNPID]
-	Zs = geno[, setsSNPID]
+	Zs = geno
 	testID.Zs = Get_testSNPsMAF(MAF = MAFi, openLowerTestMAF = NULL, openUpperTestMAF = Causal.MAF.Cutoff)
 	n.test = length(testID.Zs)
 	if (!size) {
@@ -646,7 +645,7 @@ simu.XF_R = function(geno, setsSNPID, MAF, betaType = c("LogMAF", "FixedMAF")[1]
 	}
 
 	N = nrow(geno)
-	out = data.frame(N = N, Causal.MAF.Cutoff, Causal.Ratio, Sign, n.causal, length(setsSNPID), n.test, Me, p.SKAT, p.SKAT_lian, p.Score, p.singleSNP.LR, p.singleSNP.t)
+	out = data.frame(N = N, Causal.MAF.Cutoff, Causal.Ratio, Sign, n.causal, ncol(geno), n.test, Me, p.SKAT, p.SKAT_lian, p.Score, p.singleSNP.LR, p.singleSNP.t)
 	colnames(out) = c("N", "Causal.MAF.Cutoff", "Causal.Ratio", "Sign", "n.causal", "nVariants", "nMA", "Me", "SKAT", "SKAT_lian", "Score", "SingleSNP_LR", "SingleSNP_t")
 
 	out
@@ -664,7 +663,7 @@ simu.XF_StN = function(geno,StN = 0.1, size = F, Causal.Ratio = 0.05, Sign = 0.5
 		n.causal = Zs$n.causal
 		yhat = X %*% beta_x + Zs$u
 		vare = var(yhat)/StN
-		e = rnorm(0, sqrt(vare))
+		e = rnorm(N,mean=0, sd=sqrt(vare))
 		y = yhat + e
 		outWindow = GWAS.SW(y, X0 = X, Xt = Zs$Z, G = NULL)
 		outSingleSNP = GWAS.P3D(y = y, X0 = X, Xt = Zs$Z, multipleCorrection = T, G = NULL, method = c("LR", "t"))
@@ -674,7 +673,7 @@ simu.XF_StN = function(geno,StN = 0.1, size = F, Causal.Ratio = 0.05, Sign = 0.5
 		n.causal = 0
 		yhat = X %*% beta_x
 		vare = var(yhat)/StN
-		e = rnorm(0, sqrt(vare))
+		e = rnorm(N,mean=0, sd=sqrt(vare))
 		y = yhat + e
 		outWindow = GWAS.SW(y, X0 = X, Xt = Zs, G = NULL)
 		outSingleSNP = GWAS.P3D(y = y, X0 = X, Xt = Zs, multipleCorrection = T, G = NULL, method = c("LR", "t"))
