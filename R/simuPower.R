@@ -689,8 +689,8 @@ simu.XF_StN = function(geno,StN = 0.1, size = F, Causal.Ratio = 0.05, Sign = 0.5
 
 
 	N = nrow(geno)
-	out = data.frame(N = N, Causal.Ratio, Sign, n.causal, ncol(geno), Me, p.SKAT, p.SKAT_lian, p.Score, p.singleSNP.LR, p.singleSNP.t)
-	colnames(out) = c("N", "Causal.Ratio", "Sign", "n.causal", "nVariants", "Me", "SKAT", "SKAT_lian", "Score", "SingleSNP_LR", "SingleSNP_t")
+	out = data.frame(N = N, StN,Causal.Ratio, Sign, n.causal, ncol(geno), Me, p.SKAT, p.SKAT_lian, p.Score, p.singleSNP.LR, p.singleSNP.t)
+	colnames(out) = c("N", "StN","Causal.Ratio", "Sign", "n.causal", "nVariants", "Me", "SKAT", "SKAT_lian", "Score", "SingleSNP_LR", "SingleSNP_t")
 
 	out
 }
