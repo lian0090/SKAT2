@@ -291,7 +291,7 @@ testZ=function(y,X,W=NULL,tauRel=NULL,Zt,eigenZd,windowtest,tU1X=NULL,tU1y=NULL,
   }
   
   if(!is.null(windowtest)){
-  	tU1Zt=Crossprod(U1,Zt)
+  	tU1Zt=crossprod(U1,Zt)
   	tyZt=crossprod(y,Zt)
   	tXZt=crossprod(X,Zt)
   	tZtZt=crossprod(Zt)	
