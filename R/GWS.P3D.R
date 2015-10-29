@@ -3,36 +3,39 @@
 #If I use the same variance component from emma to put into getDL, I will get exactly the same pvalue 
 #Population structure previously determined. 
 ##perform association mapping for provided markers while correcting for multiple test.
-P3D.NULL = function(y, X0 = NULL, G = NULL) {
+P3D.NULL = function(y, X0 = NULL, Z0 = NULL) {
 	out = list()
 	if (is.null(X0)) {
 		X0 = matrix(rep(1, length(y)))
 	}
-	#optim function will report not being able to evalue function at intial values when there is NA
-	
-	#stop("there should be no missing values")
-	
 	whNA = which(is.na(y))
 	if (length(whNA) > 0) {
 		y = y[-whNA]
 		X0 = X0[-whNA, , drop = F]
 	}
-
-
-	if (!is.null(G)) {
-		if ("matrix" %in% class(G)) {
-			cat("To save computation time, it is better to supply eigenG instead of G \n")
-			eigenG = getEigenG(G)
-		} else if (("eigenG" %in% class(G))) {
-			eigenG = G
+	if (length(Z0) < 1) {
+		eigenG = NULL
+		out$y = y
+		out$X0 = X0
+		out$eigenG = NULL
+		out$whichNa = whNA
+		out$Var = NULL
+		out$lm0 = lm(y ~ -1 + X0)
+	} else {
+		if (!("eigenG" %in% class(Z0[[1]]))) {
+			cat("It is better to supply the first element of Z as an eigenG object to save computation\n")
+			eigenG = getEigenG(Zg = Z0[[1]])
 		} else {
-			stop("G must be a matrix or eigenG")
+			eigenG = Z[[1]]
+		}
+		if (length(Z0) == 1) {
+			Zw = NULL
+		} else {
+			Zw = Z0[-1]
 		}
 		if (length(whNA) > 0) {
 			eigenG$U1 = eigenG$U1[-whNA, ]
 		}
-		#X0: fixed effects not being tested
-		
 		X = as.matrix(X0)
 		n = length(y)
 		U1 = eigenG$U1
@@ -53,25 +56,19 @@ P3D.NULL = function(y, X0 = NULL, G = NULL) {
 		out$Var = Var
 		out$whichNa = whNA
 		out$lm0 = NULL
-	} else {
-		out$y = y
-		out$X0 = X0
-		out$eigenG = NULL
-		out$whichNa = whNA
-		out$Var = NULL
-		out$lm0 = lm(y ~ -1 + X0)
-	}
+	}	
+	
 	class(out) = c("list", "P3D0")
 	return(out)
 }
 
 
-GWAS.P3D = function(y, Xt, X0 = NULL, G = NULL, multipleCorrection = T, P3D0 = NULL, method = "LR") 
+GWAS.P3D = function(y, Xt, X0 = NULL, Z0 = list(), multipleCorrection = T, P3D0 = NULL, method = "LR") 
 {
 	#P3D0 allows previously defined P3D0, this might be useful if you are constantly testing you code for small number of markers  
 	
 	if (is.null(P3D0)) {
-		P3D0 = P3D.NULL(y, X0, G)
+		P3D0 = P3D.NULL(y, X0, Z0)
 	}
 	X0 = as.matrix(P3D0$X0)
 	y = P3D0$y
@@ -99,7 +96,6 @@ GWAS.P3D = function(y, Xt, X0 = NULL, G = NULL, multipleCorrection = T, P3D0 = N
 		Me = 1
 	}
 	p.value = rep(NA, ncol(Xt))
-
 
 	p.value = apply(Xt, 2, function(a) {
 		singleSNP(y, X0 = X0, Xt = a, Var = Var, eigenG = eigenG, method = method, lm0 = lm0)$p.value * Me
@@ -197,8 +193,8 @@ singleSNP = function(y, X0, Xt, Var = NULL, eigenG, method = "LR", P3D = T, lm0 
 		for (i in 1:length(method)) {
 			if ("LR" == method[i]) {
 				trypvalue = try({
-					ln0 = getLoglik(Var = Var, y, X = X0, eigenZd = eigenG, logVar = F, REML = F)
-					ln1 = getLoglik(Var = Var1, y, X = X, eigenZd = eigenG, logVar = F, REML = F)
+					ln0 = getLoglik(Var = Var, y, X = X0, Z=list(eigenG),  REML = F)
+					ln1 = getLoglik(Var = Var1, y, X = X, Z=list(eigenG),  REML = F)
 					Q = -2 * (ln0 - ln1)
 					p.value = pchisq(Q, df = length(test), lower.tail = F)
 					out$ML1 = ln1
@@ -209,7 +205,7 @@ singleSNP = function(y, X0, Xt, Var = NULL, eigenG, method = "LR", P3D = T, lm0 
 				})
 			} else if ("t" == method[i]) {
 				trypvalue = try({
-					outDL = outDL = getDL.XYZ(var_e = Var1[1], taud = Var1[2], eigenZd = eigenG, X = X, y = y)
+					outDL = outDL = getDL.XYZ(var_e = Var1[1], taud = Var1[2], eigenG = eigenG, X = X, y = y)
 					beta = outDL$hat_alpha
 					vbeta = solve(outDL$tXVinvX)
 					tscore = abs(beta[test])/sqrt(vbeta[test, test])
