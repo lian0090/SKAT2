@@ -426,3 +426,4 @@ testZ=function(y,X,W=NULL,tauRel=NULL,Zt,eigenZd,windowtest,tU1X=NULL,tU1y=NULL,
   }#
  return(out)  #
 }
+source("/Users/lianlian/Dropbox/work/AssociationMapping/humanGxE/SKAT2/R/GWASW.R")

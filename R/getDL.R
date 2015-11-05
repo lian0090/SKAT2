@@ -1,112 +1,109 @@
+##reduce the initial values of var
+reduceInitVar = function(nw, VarRel) {
+		namesPar = c("VarE", "VarG")
+      if (nw > 0) {
+	namesPar = c("VarE", "VarG", paste("VarW", c(1:nw), sep = ""))
+		}
 
-get_tau = function(Var, logVar, tauRel) {
+	##return the independent var. for example, VarW1=VarW2, then VarW1 will be removed from the output
+	if (!is.null(VarRel)) {
+		splitvar = strsplit(VarRel, split = "=")
+		unlist.splitvar = unlist(splitvar)
+		#only the independent Var need to be positive if using logVar
+		#exp transformation will only be applied to par, not the dependent var
 
+		n.Rel = length(splitvar)
+		if (length(unlist.splitvar) > 2 * length(splitvar)) 
+			stop("Every equation must contain only one relationship")
+		#strip off the digits, decimal point (.) and +,-,*,/
+		if (any(!(gsub("([[:digit:][:punct:]e]+)", "", unlist.splitvar) %in% c("VarG", "VarW", "")))) {
+			stop("in VarRel, must only specify VarG or VarWD, where D is any integer less or equal to the number of Zw matrix")
+		}
+		left.var = gsub(".*(Var[wd]{1}\\d*).*", "\\1", sapply(splitvar, function(a) a[1]))
+		right.var = gsub(".*(Var[wd]{1}\\d*).*", "\\1", sapply(splitvar, function(a) a[2]))
+		if (any(duplicated(left.var))) {
+			stop("duplicated terms on the lest side of equations")
+		}
+		if (length(intersect(right.var, left.var)) > 0) {
+			stop("one variable can only appear on one side of equation")
+		}
+
+		for (i in 1:length(splitvar)) {
+			splitvar.i = gsub(".*(Var[dw]{1}\\d*).*", "\\1", splitvar[[i]])
+
+			n.split = length(splitvar.i)
+			##only keep the last var from relationship equation
+			namesPar = setdiff(namesPar, splitvar.i[-n.split])
+		}
+	}
+     VarReduced = rep(0.5, length(namesPar))
+     names(VarReduced) = namesPar
+
+	return(VarReduced)
+}
+
+##expand the independent var based on VarRel. For example VarW1=-VarW2, VarW2 will be input as Var, and the value of VarW1 will be filled based on VarW1=-VarW2
+expandVar = function(Var, logVar, VarRel) {
+	#if input Var is in log scale, this function will put it back to the original scale. 
 	if (logVar == T) {
 		Var = exp(Var)
 	}
 
-	for (i in 1:length(Var)) {
-		assign(names(Var)[i], Var[i])
-	}
-	namesPar = names(Var)
-	if (any(!gsub("\\d*", "", namesPar) %in% c("var_e", "taud", "tauw"))) {
-		stop("Var names must be var_e, taud, or tauwD")
-	}
 
-	if (is.null(tauRel)) {
-		names.tauw = grep("tauw", namesPar, value = T)
-	} else {
-		for (i in 1:length(tauRel)) {
-			eval(parse(text = tauRel[[i]]))
-
+	if (!is.null(VarRel)) {
+		for (i in 1:length(Var)) {
+			assign(names(Var)[i], Var[i])
 		}
-		split.tau = strsplit(tauRel, split = "=")
-		names.tauw = grep("tauw", c(unlist(split.tau), namesPar), value = T)
-		names.tauw = gsub(".*(tauw\\d+).*", "\\1", names.tauw)
-		names.tauw = unique(names.tauw)
-	}
-	if (length(names.tauw) > 0) {
-		index.tauw = as.numeric(gsub("tauw(\\d+)", "\\1", names.tauw))
-		names.tauw = names.tauw[order(index.tauw)]
-
-		tauw = vector()
-		for (i in 1:length(names.tauw)) {
-			tauw[i] = get(names.tauw[i])
+		namesPar = names(Var)
+		if (any(!gsub("\\d*", "", namesPar) %in% c("VarE", "VarG", "VarW"))) {
+			stop("Var names must be VarE, VarG, or VarWD")
 		}
-		names(tauw) = names(tauw)
-	} else tauw = NULL
-	Var = list(var_e = var_e, taud = taud, tauw = tauw)
+
+		for (i in 1:length(VarRel)) {
+			eval(parse(text = VarRel[[i]]))
+		}
+		split.var = strsplit(VarRel, split = "=")
+		names.VarW = grep("VarW", c(unlist(split.var), namesPar), value = T)
+		names.VarW = gsub(".*(VarW\\d+).*", "\\1", names.VarW)
+		names.VarW = unique(names.VarW)
+
+		if (length(names.VarW) > 0) {
+			index.VarW = as.numeric(gsub("VarW(\\d+)", "\\1", names.VarW))
+			names.VarW = names.VarW[order(index.VarW)]
+
+			VarW = vector()
+			for (i in 1:length(names.VarW)) {
+				VarW[i] = get(names.VarW[i])
+			}
+			Var = c(VarE, VarG, VarW)
+			names(Var) = c("VarE", "VarG", names.VarW)
+		} else {
+			Var = c(VarE, VarG)
+			names(Var) = c("VarE", "VarG")
+		}
+	}
+
 	return(Var)
 }
-getDL.XYZ = function(var_e, taud, tauw = NULL, eigenG, X, y, Zw = NULL, kw = NULL, Zt = NULL) {
-	n = length(y)
-	U1 = eigenG$U1
-	d1 = eigenG$d1
-	tXX = crossprod(X)
-	tU1y = crossprod(U1, y)
-	tU1X = crossprod(U1, X)
-	tXy = crossprod(X, y)
-	tyy = sum(y^2)
-	if (!is.null(Zw)) {
-		tU1W = crossprod(U1, Zw)
-		tXW = crossprod(X, Zw)
-		tWW = crossprod(Zw)
-		tWy = crossprod(Zw, y)
-	} else {
-		tU1W = tXW = tWW = tWy = NULL
 
+
+getDL = function(Var, FaST, getQ = F, getS = F, getNeg2Log = T, REML = T, getAlphaHat=F) {
+	if (FaST$nw == 0) {
+		VarW = NULL
+	} else {
+		VarW = Var[-c(1:2)]
 	}
-	if (!is.null(Zt)) {
-		tZtZt = crossprod(Zt)
-		tU1Zt = crossprod(U1, Zt)
-		tXZt = crossprod(X, Zt)
-		tyZt = crossprod(y, Zt)
-		if (!is.null(Zw)) {
-			tWZt = crossprod(Zw, Zt)
-		} else {
-			tWZt = NULL
+	##.Call will not be able to take NULL values. 
+	FaSTnames=c("d1","n","tU1y","tU1X","tXX","tXy","tyy","kw","nw","tU1W","tXW","tWW","tWy","tZtZt","tU1Zt","tXZt","tyZt","tWZt")
+	for(i in 1:length(FaSTnames)){
+		namei=FaSTnames[i]
+		if(is.null(FaST[[namei]])){
+			FaST[[namei]]=NA
 		}
-	} else {
-		tZtZt = tU1Zt = tXZt = tyZt = NULL
 	}
-	out = getDL(var_e, taud, d1 = d1, n = n, tU1y = tU1y, tU1X = tU1X, tXX = tXX, tXy = tXy, tyy = tyy, tauw = tauw, kw = kw, tU1W = tU1W, tXW = tXW, 
-		tWW = tWW, tWy = tWy, tZtZt = tZtZt, tU1Zt = tU1Zt, tXZt = tXZt, tyZt = tyZt, tWZt = tWZt, getQ = F, getS = F, getNeg2Log = T, REML = T)
-
-	return(out)
-}
-
-
-
-getDL = function(var_e, taud, d1, n, tU1y, tU1X, tXX, tXy, tyy, tauw = NULL, kw = NULL, tU1W = NULL, tXW = NULL, tWW = NULL, tWy = NULL, tZtZt = NULL, 
-	tU1Zt = NULL, tXZt = NULL, tyZt = NULL, tWZt = NULL, getQ = F, getS = F, getNeg2Log = T, REML = T) {
-	if (is.null(tauw)) 
-		tauw = NA
-	if (is.null(kw)) 
-		kw = NA
-	if (is.null(tU1W)) 
-		tU1W = NA
-	if (is.null(tXW)) 
-		tXW = NA
-	if (is.null(tWW)) 
-		tWW = NA
-	if (is.null(tWy)) 
-		tWy = NA
-	if (is.null(tZtZt)) 
-		tZtZt = NA
-	if (is.null(tU1Zt)) 
-		tU1Zt = NA
-	if (is.null(tXZt)) 
-		tXZt = NA
-	if (is.null(tyZt)) 
-		tyZt = NA
-	if (is.null(tWZt)) 
-		tWZt = NA
-	getQ = as.integer(getQ)
-	getS = as.integer(getS)
-	getNeg2Log = as.integer(getNeg2Log)
-	REML = as.integer(REML)
-	out <- .Call("C_getDL", var_e, taud, d1, n, tU1y, tU1X, tXX, tXy, tyy, tauw, kw, tU1W, tXW, tWW, tWy, tZtZt, tU1Zt, tXZt, tyZt, tWZt, getQ, 
-		getS, getNeg2Log, REML)
+	
+	out <- .Call("C_getDL", Var[1], Var[2], FaST$d1, FaST$n, FaST$tU1y, FaST$tU1X, FaST$tXX, FaST$tXy, FaST$tyy, VarW, FaST$kw, FaST$nw, FaST$tU1W, FaST$tXW, FaST$tWW, FaST$tWy, FaST$tZtZt, FaST$tU1Zt, FaST$tXZt, FaST$tyZt, 
+		FaST$tWZt, as.integer(getQ), as.integer(getS), as.integer(getNeg2Log), as.integer(REML),as.integer(getAlphaHat))
 	return(out)
 
 }

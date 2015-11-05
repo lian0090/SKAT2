@@ -7,7 +7,7 @@
 #include "matrix.h"
 
 
-SEXP C_getDL(SEXP R_var_e, SEXP R_taud, SEXP R_d1, SEXP R_n, SEXP R_tU1y, SEXP R_tU1X, SEXP R_tXX, SEXP R_tXy, SEXP R_tyy, SEXP R_tauw, SEXP R_kw, SEXP R_tU1W, SEXP R_tXW, SEXP R_tWW, SEXP R_tWy, SEXP R_tZtZt, SEXP R_tU1Zt, SEXP R_tXZt, SEXP R_tyZt, SEXP R_tWZt, SEXP R_getQ, SEXP R_getS, SEXP R_getNeg2Log, SEXP R_REML)
+SEXP C_getDL(SEXP R_var_e, SEXP R_taud, SEXP R_d1, SEXP R_n, SEXP R_tU1y, SEXP R_tU1X, SEXP R_tXX, SEXP R_tXy, SEXP R_tyy, SEXP R_tauw, SEXP R_kw, SEXP R_nw,  SEXP R_tU1W, SEXP R_tXW, SEXP R_tWW, SEXP R_tWy, SEXP R_tZtZt, SEXP R_tU1Zt, SEXP R_tXZt, SEXP R_tyZt, SEXP R_tWZt, SEXP R_getQ, SEXP R_getS, SEXP R_getNeg2Log, SEXP R_REML, SEXP R_getAlphaHat)
 {
 	int nPROTECT=0;
 	double var_e=NUMERIC_VALUE(R_var_e);
@@ -50,9 +50,12 @@ SEXP C_getDL(SEXP R_var_e, SEXP R_taud, SEXP R_d1, SEXP R_n, SEXP R_tU1y, SEXP R
 	int getS=INTEGER_VALUE(R_getS);
 	int REML=INTEGER_VALUE(R_REML);
 	int getNeg2Log=INTEGER_VALUE(R_getNeg2Log);
+    int getAlphaHat=INTEGER_VALUE(R_getAlphaHat);
+    int nw=INTEGER_VALUE(R_nw);
+
 	
 	//output
-	int nlistRout=5;
+	int nlistRout=7;
 	SEXP list,listnames; 
 	PROTECT(list = allocVector(VECSXP, nlistRout));nPROTECT+=1;
   	PROTECT(listnames = allocVector(VECSXP, nlistRout));nPROTECT+=1;
@@ -61,14 +64,13 @@ SEXP C_getDL(SEXP R_var_e, SEXP R_taud, SEXP R_d1, SEXP R_n, SEXP R_tU1y, SEXP R
   	SET_VECTOR_ELT(listnames, 2,PROTECT(mkString("lambda")));nPROTECT+=1;
   	SET_VECTOR_ELT(listnames, 3, PROTECT(mkString("S")));nPROTECT+=1;
 	SET_VECTOR_ELT(listnames, 4, PROTECT(mkString("sdS")));nPROTECT+=1;
+    SET_VECTOR_ELT(listnames, 5, PROTECT(mkString("hat_alpha")));nPROTECT+=1;
+    SET_VECTOR_ELT(listnames, 6, PROTECT(mkString("invtXVinvX")));nPROTECT+=1;
+
 	//dimensions
 	int kd=length(R_d1);
-	int kx = length(R_tXy);
-	int kwT=length(R_tWy);;//total number of columns for W.
-	int nkw=length(R_kw);//number of sub matrixes W1,W2,..for W
-	int kt=length(R_tyZt);
-	
-	
+    int kx= INTEGER(getAttrib(R_tU1X,R_DimSymbol))[1];
+		
 	 
 	int i,j,k;
 	double *d_sharp=(double *)R_alloc(kd,sizeof(double));
@@ -76,7 +78,7 @@ SEXP C_getDL(SEXP R_var_e, SEXP R_taud, SEXP R_d1, SEXP R_n, SEXP R_tU1y, SEXP R
 	double *tXVinvX=(double *)R_alloc(kx*kx,sizeof(double));
 	double *tXVinvy=(double *)R_alloc(kx,sizeof(double));
 	double *tXU1d = (double *)R_alloc(kx*kd,sizeof(double));//tXU1dsharp or tXU1dtau
-	double *tWU1d, *tXVdW,*tWVdy,*tWVdW,*Gamma,*Vgamma,*Cgamma,*invtXVinvX,*hat_alpha,*tehatVdW,*tWVdZt ;//declare these upfront,otherwise, there might be error
+	double *tWU1d, *tXVdW,*tWVdy,*tWVdW,*Gamma,*Vgamma,*Cgamma,*tehatVdW,*tWVdZt ;//declare these upfront,otherwise, there might be error
    
 	for(i=0;i<kd;i++){
 		d_sharp[i]=1/(d1[i]*taud+var_e);
@@ -103,8 +105,13 @@ SEXP C_getDL(SEXP R_var_e, SEXP R_taud, SEXP R_d1, SEXP R_n, SEXP R_tU1y, SEXP R
 		//tXVdy
 		matprod(tXU1d,kx,kd,tU1y,kd,1,tXVinvy,'N','N',1,0);
 	}
-	
-	if(!ISNAN(tauw[0])){
+    
+    int kwT;//total number of columns for W.
+	if(nw>0){
+        kwT=0;
+        for(i=0;i<nw;i++){
+            kwT+=kw[i];
+        }
 		tWU1d = (double *)R_alloc(kwT*kd,sizeof(double));//tWU1dsharp or tWU1dtau
     	tXVdW = (double *)R_alloc(kx*kwT,sizeof(double));
         tWVdy = (double *)R_alloc(kwT,sizeof(double));
@@ -136,7 +143,7 @@ SEXP C_getDL(SEXP R_var_e, SEXP R_taud, SEXP R_d1, SEXP R_n, SEXP R_tU1y, SEXP R
 		Gamma =(double *) R_alloc(kwT,sizeof(double));
 		int countGamma;
 		countGamma=0;
-        for(i=0;i<nkw;i++){
+        for(i=0;i<nw;i++){
     		for(j=0;j<kw[i];j++){
     			Gamma[countGamma]=tauw[i];
     			countGamma+=1;
@@ -168,13 +175,24 @@ SEXP C_getDL(SEXP R_var_e, SEXP R_taud, SEXP R_d1, SEXP R_n, SEXP R_tU1y, SEXP R
     	free(tXVdW_Cgamma_tWVdX);
     	free(tXVdW_Cgamma_tWVdy);    	    	    	    	
 	}
-	invtXVinvX = (double *) R_alloc(kx*kx,sizeof(double));
+    SEXP R_invtXVinvX;
+    PROTECT(R_invtXVinvX=allocMatrix(REALSXP,kx,kx)); nPROTECT+=1;
+	double *invtXVinvX;
+	invtXVinvX=NUMERIC_POINTER(R_invtXVinvX);
 	memcpy(invtXVinvX, tXVinvX, sizeof(double)*kx * kx);
     matinv(invtXVinvX,kx);
     //hat_alpha
-   	hat_alpha= (double *)R_alloc(kx,sizeof(double));
+    SEXP R_hat_alpha;
+    PROTECT(R_hat_alpha=allocVector(REALSXP,kx));nPROTECT+=1;
+   	double *hat_alpha;
+   	hat_alpha=NUMERIC_POINTER(R_hat_alpha);
     matprod(invtXVinvX,kx,kx,tXVinvy,kx,1,hat_alpha,'N','N',1,0);
-    if(!ISNAN(tauw[0])){
+    if(getAlphaHat){
+    SET_VECTOR_ELT(list,5,R_hat_alpha);
+    SET_VECTOR_ELT(list,6,R_invtXVinvX);
+    }
+    
+    if(nw>0){
     tehatVdW =(double *)R_alloc(kwT,sizeof(double));
 	memcpy(tehatVdW,tWVdy,sizeof(double)*kwT);
 	matprod(hat_alpha,kx,1,tXVdW,kx,kwT,tehatVdW,'T','N',-1,1);	
@@ -221,7 +239,7 @@ SEXP C_getDL(SEXP R_var_e, SEXP R_taud, SEXP R_d1, SEXP R_n, SEXP R_tU1y, SEXP R
     	double neg2logLik1;
     	double neg2logLik2;
     	double neg2logLik3;
-   		if(ISNAN(tU1W[0])){
+   		if(nw==0){
     		neg2logLik1=logDetVd;
     		neg2logLik3=tehat_Vd_ehat;
     	}else{
@@ -251,7 +269,10 @@ SEXP C_getDL(SEXP R_var_e, SEXP R_taud, SEXP R_d1, SEXP R_n, SEXP R_tU1y, SEXP R
     
     
 	if(getQ==1|getS==1){
-		if(ISNAN(tU1Zt[0]))error("tU1Zt is NA cannot get Q and S");
+        
+		if(ISNA(tU1Zt[0]))error("tU1Zt is NULL, cannot get Q and S");
+        int kt= INTEGER(getAttrib(R_tU1Zt,R_DimSymbol))[1];
+
 		double *tXVinvZt =(double *)R_alloc(kx*kt,sizeof(double));
 		double *tyVdZt =(double *)R_alloc(kt,sizeof(double));
 		double *tZtVinvZt =(double *)R_alloc(kt*kt,sizeof(double));
@@ -282,7 +303,7 @@ SEXP C_getDL(SEXP R_var_e, SEXP R_taud, SEXP R_d1, SEXP R_n, SEXP R_tU1y, SEXP R
 					
 
 			//tWVdZt
-			if(!ISNAN(tauw[0])){
+			if(nw>0){
 				tWVdZt =(double *)R_alloc(kwT*kt,sizeof(double));
 				memcpy(tWVdZt,tWZt,sizeof(double)*kwT*kt);
 				matprod(tWU1d,kwT,kd,tU1Zt,kd,kt,tWVdZt,'N','N',1,1/var_e);	
@@ -307,7 +328,7 @@ SEXP C_getDL(SEXP R_var_e, SEXP R_taud, SEXP R_d1, SEXP R_n, SEXP R_tU1y, SEXP R
 				}
 			}
 			//tWVdZt
-			if(!ISNAN(tauw[0])){
+			if(nw>0){
 				double *tWVdZt =(double *)R_alloc(kwT*kt,sizeof(double));
 				matprod(tWU1d,kwT,kd,tU1Zt,kd,kt,tWVdZt,'N','N',1,0);	
 			}			
@@ -316,7 +337,7 @@ SEXP C_getDL(SEXP R_var_e, SEXP R_taud, SEXP R_d1, SEXP R_n, SEXP R_tU1y, SEXP R
 	    double *LQ =(double *)R_alloc(kt,sizeof(double));
 	    memcpy(LQ,tyVdZt,sizeof(double)*kt);
 		matprod(hat_alpha,kx,1,tXVinvZt,kx,kt,LQ,'T','N',-1,1);	
-		if(!ISNAN(tauw[0])){
+		if(nw>0){
 			double *Cgamma_tWVdZt=(double *)calloc(kwT*kt,sizeof(double));
 			matprod(Cgamma,kwT,kwT,tWVdZt,kwT,kt,Cgamma_tWVdZt,'N','N',1,0);
 			matprod(tehatVdW,1,kwT,Cgamma_tWVdZt,kwT,kt,LQ,'N','N',-1,1);
@@ -343,7 +364,7 @@ SEXP C_getDL(SEXP R_var_e, SEXP R_taud, SEXP R_d1, SEXP R_n, SEXP R_tU1y, SEXP R
 		double Q=0;
 		for(i=0;i<kt;i++){Q+=pow(LQ[i],2);}
 		Q=Q/2;
-		if(getQ==1){
+		if(getQ){
 			SEXP R_lambda;
 			
     		PROTECT(R_lambda=allocVector(REALSXP,kt));nPROTECT+=1;
@@ -356,7 +377,7 @@ SEXP C_getDL(SEXP R_var_e, SEXP R_taud, SEXP R_d1, SEXP R_n, SEXP R_tU1y, SEXP R
 			SET_VECTOR_ELT(list,2,R_lambda);
 			
 		}
-		if(getS==1){
+		if(getS){
 			double S=0;
 			for(i=0;i<kt;i++){
 				S+=tZtPZt[i+kt*i];

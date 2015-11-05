@@ -3,85 +3,22 @@
 #If I use the same variance component from emma to put into getDL, I will get exactly the same pvalue 
 #Population structure previously determined. 
 ##perform association mapping for provided markers while correcting for multiple test.
-P3D.NULL = function(y, X0 = NULL, Z0 = NULL) {
-	out = list()
-	if (is.null(X0)) {
-		X0 = matrix(rep(1, length(y)))
-	}
-	whNA = which(is.na(y))
-	if (length(whNA) > 0) {
-		y = y[-whNA]
-		X0 = X0[-whNA, , drop = F]
-	}
-	if (length(Z0) < 1) {
-		eigenG = NULL
-		out$y = y
-		out$X0 = X0
-		out$eigenG = NULL
-		out$whichNa = whNA
-		out$Var = NULL
-		out$lm0 = lm(y ~ -1 + X0)
-	} else {
-		if (!("eigenG" %in% class(Z0[[1]]))) {
-			cat("It is better to supply the first element of Z as an eigenG object to save computation\n")
-			eigenG = getEigenG(Zg = Z0[[1]])
-		} else {
-			eigenG = Z[[1]]
-		}
-		if (length(Z0) == 1) {
-			Zw = NULL
-		} else {
-			Zw = Z0[-1]
-		}
-		if (length(whNA) > 0) {
-			eigenG$U1 = eigenG$U1[-whNA, ]
-		}
-		X = as.matrix(X0)
-		n = length(y)
-		U1 = eigenG$U1
-		d1 = eigenG$d1
-		tXX = crossprod(X)
-		tU1y = crossprod(U1, y)
-		tU1X = crossprod(U1, X)
-		tXy = crossprod(X, y)
-		tyy = sum(y^2)
-		Var = c(0.5, 0.5)
-		names(Var) = c("var_e", "taud")
-		fit0 <- fit.optim(par = Var, fn = neg2Log, logVar = T, tU1y = tU1y, tU1X = tU1X, tXX = tXX, tXy = tXy, tyy = tyy, d1 = d1, n = n)
-		Var = fit0$par
-		names(Var) = c("var_e", "var_g")
-		out$y = y
-		out$X0 = X0
-		out$eigenG = eigenG
-		out$Var = Var
-		out$whichNa = whNA
-		out$lm0 = NULL
-	}	
-	
-	class(out) = c("list", "P3D0")
-	return(out)
-}
 
 
-GWAS.P3D = function(y, Xt, X0 = NULL, Z0 = list(), multipleCorrection = T, P3D0 = NULL, method = "LR") 
-{
+GWAS.P3D = function(y, Xt, X0 = NA, Z0 = NA, fit0 = NA, multipleCorrection = T, method = "LR") {
 	#P3D0 allows previously defined P3D0, this might be useful if you are constantly testing you code for small number of markers  
-	
-	if (is.null(P3D0)) {
-		P3D0 = P3D.NULL(y, X0, Z0)
+	FaST0=getFaST(y,X=X0,Z=Z0)
+		
+	if (is.na(fit0)) {
+		fit0 = fitlmm.FaST(FaST0)
 	}
-	X0 = as.matrix(P3D0$X0)
-	y = P3D0$y
-	Var = P3D0$Var
-	eigenG = P3D0$eigenG
-	whichNa = P3D0$whichNa
-	lm0 = P3D0$lm0
+	whichNa =FaST0$whichNa
 	Xt = as.matrix(Xt)
 	##remove non-variants
 	if (length(whichNa) > 0) 
 		Xt = Xt[-whichNa, ]
-	varXt = apply(Xt, 2, var)
-	whichVar = which(varXt > 0)
+	    varXt = apply(Xt, 2, var)
+	    whichVar = which(varXt > 0)
 	if (length(whichVar) > 0) {
 		Xt = Xt[, whichVar, drop = F]
 	} else {
@@ -98,105 +35,71 @@ GWAS.P3D = function(y, Xt, X0 = NULL, Z0 = list(), multipleCorrection = T, P3D0 
 	p.value = rep(NA, ncol(Xt))
 
 	p.value = apply(Xt, 2, function(a) {
-		singleSNP(y, X0 = X0, Xt = a, Var = Var, eigenG = eigenG, method = method, lm0 = lm0)$p.value * Me
+		singleXt.FaST(FaST0, fit0=fit0, Xt = a, method = method, P3D=T)$p.value * Me
 	})
 	return(list(Me = Me, p.value = p.value, H0var = Var))
 }
 
 
-##this function will not be exported. therefore, having eigenG as parameter is fine. 
-singleSNP = function(y, X0, Xt, Var = NULL, eigenG, method = "LR", P3D = T, lm0 = NULL) {
+testX = function(FaST0, fit0 = NA, Xt, method = "LR",P3D=T) {
 	##Var is the variance for the NULL model, without fitting the test SNPs 
-	
-	##allows NULL eigenG, in this case, the directly use lm function to fit the model. 
-	
-	X0 = as.matrix(X0)
-	Xt = as.matrix(Xt)
-	if (any(is.na(y))) {
-		#optim function will report not being able to evalue function at intial values when there is NA
-		
-		#stop("there should be no missing values")
-		
-		whNA = which(is.na(y))
-		y = y[-whNA]
-		X0 = X0[-whNA, , drop = F]
-		Xt = Xt[-whNA, , drop = F]
-		if (!is.null(eigenG)) {
-			eigenG$U1 = eigenG$U1[-whNA, ]
-		}
-	}
-	X = cbind(X0, Xt)
+	#P3D=T, NULL model and alternative model share the same variance components.	
+out$p.value = rep(0, length(method))
+	names(out$p.value) = method
+
 	out = list()
-	n.beta = ncol(X)
-	test = c((ncol(X0) + 1):n.beta)
+	Xt = as.matrix(Xt)
+	ntest = ncol(Xt)
+	test = c((ncol(FaST0$X) + 1):(ncol(FaST0$X) + ntest))
 
-
-	if (length(test) > 1) {
+	if (ntest > 1) {
 		if ("t" %in% method) {
 			stop("use LR test when there is more than one fix effect to be tested")
 		}
 	}
-	out$p.value = rep(0, length(method))
-	names(out$p.value) = method
 
-
-	##Method for not fitting genetic background
-	
-	if (is.null(eigenG)) {
-		if ("LR" %in% method) {
-			if (is.null(lm0)) {
-				cat("it is better to supply lm0 when not fitting genetic background and using LR test ")
-				lm0 = lm(y ~ -1 + X0)
-			}
+	##tests for NULL Z0
+	if ("LR" %in% method) {
+		if (is.na(fit0)) {
+			cat("it is better to supply fit0 when using LR test ")
+			fit0 = fitlmm.FaST(FaST0)
 		}
-		lm1 = lm(y ~ -1 + X)
+	}
+	FaST1 = updateFaST.X(FaST0, X = cbind(X0, Xt))
 
+
+	if (class(fit0) == "lm") {
+		fit1 = fitlmm.FaST(updateFaST.X(FaST0, X = cbind(X0, Xt)))
 
 		for (i in 1:length(method)) {
 			if (method[i] == "LR") {
-				Q = -2 * (logLik(lm0) - logLik(lm1))
-				out$p.value[i] = pchisq(Q, df = length(test), lower.tail = F)
+				Q = -2 * (logLik(fit0) - logLik(fit1))
+				out$p.value[i] = pchisq(Q, df = ntest, lower.tail = F)
 			}
 			if (method[i] == "t") {
-				out$p.value[i] = summary(lm1)$coefficients[n.beta, 4]
+				out$p.value[i] = summary(fit1)$coefficients[n.beta, 4]
 			}
-
 
 		}
-
-
-	}
-	##end methods for NULL eigenG
-	
-
-	##Methods for fitting genetic background
-	
-	if (!is.null(eigenG)) {
-		#Var for NULL model
-		
-
-		if (is.null(Var)) {
-			if (P3D == T | "LR" %in% method) {
-				stop("must supply Var for NULL model if P3D is true or if using LR mothod")
-			}
+		##end methods for NULL Z0
 		} else {
-			names(Var) = c("var_e", "taud")
-		}
+
+		Var = fit0$Var
+
 		if (P3D == T) {
 			Var1 = Var
 		} else {
-			Var1 = P3D.NULL(y, X0 = X, eigenG)$Var
-			names(Var1) = c("var_e", "taud")
+			fit1 = fitlmm.FaST(FaST1)
+			Var1 = fit1$Var
 		}
-
-
+		outDL = getDL(Var1, FaST1, getNeg2Log = T, REML = F)
 		for (i in 1:length(method)) {
 			if ("LR" == method[i]) {
 				trypvalue = try({
-					ln0 = getLoglik(Var = Var, y, X = X0, Z=list(eigenG),  REML = F)
-					ln1 = getLoglik(Var = Var1, y, X = X, Z=list(eigenG),  REML = F)
+					ln0 = fit0$loglik
+					ln1 = -1/2 * outDL$neg2logLik
 					Q = -2 * (ln0 - ln1)
-					p.value = pchisq(Q, df = length(test), lower.tail = F)
+					p.value = pchisq(Q, df = ntest, lower.tail = F)
 					out$ML1 = ln1
 					out$ML0 = ln0
 					out$LR = Q
@@ -205,12 +108,10 @@ singleSNP = function(y, X0, Xt, Var = NULL, eigenG, method = "LR", P3D = T, lm0 
 				})
 			} else if ("t" == method[i]) {
 				trypvalue = try({
-					outDL = outDL = getDL.XYZ(var_e = Var1[1], taud = Var1[2], eigenG = eigenG, X = X, y = y)
 					beta = outDL$hat_alpha
-					vbeta = solve(outDL$tXVinvX)
+					vbeta = outDL$invtXVinvX
 					tscore = abs(beta[test])/sqrt(vbeta[test, test])
-					##note: the df for t-distribution is not corrected by Satterthwaite's method. Likelihood ratio test should be better.
-					
+					##note: the df for t-distribution is not corrected by Satterthwaite's method. Likelihood ratio test should be better.	
 					p.value = 2 * pt(tscore, df = n - n.beta, lower.tail = F)
 				})
 			}
@@ -220,7 +121,5 @@ singleSNP = function(y, X0, Xt, Var = NULL, eigenG, method = "LR", P3D = T, lm0 
 			out$p.value[i] = p.value
 		}
 	}
-
-
 	return(out)
 }
