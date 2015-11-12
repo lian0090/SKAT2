@@ -276,12 +276,11 @@ SEXP C_getDL(SEXP R_var_e, SEXP R_taud, SEXP R_d1, SEXP R_n, SEXP R_tU1y, SEXP R
 		double *tXVinvZt =(double *)R_alloc(kx*kt,sizeof(double));
 		double *tyVdZt =(double *)R_alloc(kt,sizeof(double));
 		double *tZtVinvZt =(double *)R_alloc(kt*kt,sizeof(double));
-
 		
 		if(kd<n){
 			//tXVinvZt
-			memcpy(tXVinvZt,tXZt,sizeof(double)*kx*kt);
-			matprod(tXU1d,kx,kd,tU1Zt,kd,kt,tXVinvZt,'N','N',1,1/var_e);		
+           	 memcpy(tXVinvZt,tXZt,sizeof(double)*kx*kt);
+			matprod(tXU1d,kx,kd,tU1Zt,kd,kt,tXVinvZt,'N','N',1,1/var_e);
 			//tyVdZt
 			for(j=0;j<kt;j++){
 				tyVdZt[j]=0;
@@ -309,6 +308,7 @@ SEXP C_getDL(SEXP R_var_e, SEXP R_taud, SEXP R_d1, SEXP R_n, SEXP R_tU1y, SEXP R
 				matprod(tWU1d,kwT,kd,tU1Zt,kd,kt,tWVdZt,'N','N',1,1/var_e);	
 			}					
 		}else{
+
 			//tXVinvZt
 			matprod(tXU1d,kx,kd,tU1Zt,kd,kt,tXVinvZt,'N','N',1,0);
 			//tyVdZt		
@@ -333,18 +333,31 @@ SEXP C_getDL(SEXP R_var_e, SEXP R_taud, SEXP R_d1, SEXP R_n, SEXP R_tU1y, SEXP R
 				matprod(tWU1d,kwT,kd,tU1Zt,kd,kt,tWVdZt,'N','N',1,0);	
 			}			
 		}
+       
 		
 	    double *LQ =(double *)R_alloc(kt,sizeof(double));
 	    memcpy(LQ,tyVdZt,sizeof(double)*kt);
-		matprod(hat_alpha,kx,1,tXVinvZt,kx,kt,LQ,'T','N',-1,1);	
+		matprod(hat_alpha,kx,1,tXVinvZt,kx,kt,LQ,'T','N',-1,1);
 		if(nw>0){
 			double *Cgamma_tWVdZt=(double *)calloc(kwT*kt,sizeof(double));
+  /*          printf("bk2\n");
+    //        if(Cgamma_tWVdZt==NULL)printf("NULL pointer\n");else{printf("pointer no NULL");}
+            int kk;for(kk=0;kk<10;kk++)printf("cgammad:%f\n",Cgamma[kk]);
+            printf("kwT:%d\n",kwT);
+            printf("kt:%d\n",kt);
+            printf("tWVdZt:%f\n",tWVdZt[kwT*kt-1]);
+            printf("Cgamma_tWVdZt:%f\n",Cgamma_tWVdZt[kwT*kt-1]);
+   */
 			matprod(Cgamma,kwT,kwT,tWVdZt,kwT,kt,Cgamma_tWVdZt,'N','N',1,0);
+//printf("bk3\n");
+
 			matprod(tehatVdW,1,kwT,Cgamma_tWVdZt,kwT,kt,LQ,'N','N',-1,1);
 			matprod(tWVdZt,kwT,kt,Cgamma_tWVdZt,kwT,kt,tZtVinvZt,'T','N',-1,1);
 			matprod(tXVdW,kx,kwT,Cgamma_tWVdZt,kwT,kt,tXVinvZt,'N','N',-1,1);		
 			free(Cgamma_tWVdZt);
 		}
+       
+
 		//tZtPZt
 		double *invtXVinvX_tXVinvZt;
 		invtXVinvX_tXVinvZt=(double*) calloc(kx*kt,sizeof(double));

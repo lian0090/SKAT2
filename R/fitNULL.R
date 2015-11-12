@@ -4,6 +4,7 @@ getEigenG=function(G=NULL,Zg=NULL,precision=1e-5){
   if(!is.null(G) & !is.null(Zg)) stop("Only use one of G or Zg")
   if(is.null(G) & is.null(Zg)) stop("Provide G or Zg")
   if(!is.null(Zg)){
+  	Zg=as.matrix(Zg)
   	if(any(is.na(Zg))){
   		Zg=meanImpute(Zg)
   	}
@@ -31,16 +32,24 @@ getEigenG=function(G=NULL,Zg=NULL,precision=1e-5){
   
   out$d1=d1
   out$U1=U1
-  class(out)=c("list","eigenG")
+  class(out)=c("eigenG")
   return(out)
 }
 
 
 #Impute marker genotypes by column mean
-meanImpute=function(X){
-	X=apply(X,2,function(a){if(any(is.na(a))){a[which(is.na(a))]=mean(a,na.rm=T)};return(a)})
-	return(X)
-	}
+meanImpute=function (X) 
+{
+  X=as.matrix(X)
+  X = apply(X, 2, function(a) {
+    if (any(is.na(a))) {
+      a[which(is.na(a))] = mean(a, na.rm = T)
+    }
+    return(a)
+  })
+  return(X)
+}
+
 	
 
 Meff=function(X){
@@ -102,21 +111,37 @@ fit.optim = function(FaST, VarRel=NULL, logVar = T, optimizer = "bobyqa") {
 }
 
 
-fitNULL=function(y,X=NULL,Z=NULL){
-   FaST=getFaST(y=y,X=X,Z=Z)
+fitNULL=function(null.formula,data=NULL,fit=T){
+   FaST=getFaST(null.formula,data=data)
+   out=fitNULL.FaST(FaST,fit=fit)
+   return(out)
+  }
+   
+fitNULL.FaST=function(FaST,fit=T){
+   if(fit){
    y=FaST$y
    X=FaST$X
    if (is.null(FaST$U1)) {
-	   out=with(FaST,lm(y~-1+X))
+     out=lm(y~-1+X)
 	   out$FaST=FaST
+	   out$Var=summary(out)$sigma^2
+	   names(out$Var)="VarE"
+	   #out$loglik=logLik(fit0,REML=T)
 	   class(out)="lm"
 	   return(out)
 	} else {
-
 	out = fit.optim(FaST, VarRel=NULL,logVar = T,  optimizer = "bobyqa" )
 	out$FaST=FaST	
 	class(out) = c("lmm")
 	}	
+	}else{
+	 	out=list(FaST=FaST)
+	 	if(is.null(FaST$U1)){
+	 		class(out)="lm.FaST"
+	 	}else{
+	 		class(out)="lmm.FaST"
+	 	}
+	}
 	return(out)
 }
 
