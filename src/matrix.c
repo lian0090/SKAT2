@@ -78,6 +78,37 @@
         error("transX must be N or T");
     }
 }
+
+SEXP Rsweep_prod(SEXP R_X, SEXP R_v, SEXP R_transX, SEXP R_MARGINopX){
+    
+    PROTECT(R_X=AS_NUMERIC(R_X));
+    PROTECT(R_v=AS_NUMERIC(R_v));
+    SEXP Rdim=getAttrib(R_X,R_DimSymbol);
+    int nrX=INTEGER(Rdim)[0];
+    int ncX=INTEGER(Rdim)[1];
+    int transX=INTEGER_VALUE(R_transX);
+    int MARGINopX=INTEGER_VALUE(R_MARGINopX);
+    SEXP R_Z;
+    if(transX){
+        PROTECT(R_Z=allocMatrix(REALSXP,ncX,nrX));
+    }else{
+        PROTECT(R_Z=allocMatrix(REALSXP,nrX,ncX));
+    }
+    
+    double *X=NUMERIC_POINTER(R_X);
+    double *v=NUMERIC_POINTER(R_v);
+    double *Z=NUMERIC_POINTER(R_Z);
+    
+    char trans[3]="NT";
+    
+    sweep_prod(X,v,Z,nrX,ncX,trans[transX],MARGINopX);
+    
+    
+    UNPROTECT(3);
+    return R_Z;
+}
+
+
 //matrix prodoct
 //nrx number of rows of x
 //ncx number of columns of x

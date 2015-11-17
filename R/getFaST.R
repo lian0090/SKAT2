@@ -1,36 +1,88 @@
 ##return environments without dollar signs for variable names
-checkData=function(formula,data){
+checkData=function(formula,data,getG=F,...){
+  ##... further parameters passed to model.frame such as na.action
   noGform=noCallPattern(subbars(formula),call.pattern=c(as.name(".eigenG"),as.name(".G")))
   noGform=subbars(noGform)  
   environment(noGform)=environment(formula)
   
   if (is.null(data)) {
-    fr=model.frame(noGform)
+    fr=model.frame(noGform,...)
   } else {
-    fr=model.frame(noGform,data=data)
+    fr=model.frame(noGform,data=data,...)
   }
-  names(fr)=gsub(".*\\$(.*)$","\\1",names(fr))
-  denv=list2env(fr)
-  whichNa=as.integer(attr(fr,"na.action"))
-  n0=nrow(fr)+length(whichNa)
+  #names(fr)=gsub(".*\\$(.*)$","\\1",names(fr))
+  #denv=list2env(fr)  
+  # denv=parent.env(environment())
+  # formula=as.formula(formula,env=denv)
+ 
+  ##get a whole model.frame before you get X, y, Z to avoid environment contamination.
+  if(is.null(environment(formula)$n0)){
+    whichNa=as.integer(attr(fr,"na.action"))
+    n0=nrow(fr)+length(whichNa)
+  }else{
+    whichNa=environment(formula)$whichNa
+    n0=environment(formula)$n0
+  }
+  
+  ##get fixed term
+  fixedform <- noGform
+  nb <- nobars(RHSForm(fixedform))
+  
+  if(is.null(nb)){
+    RHSForm(fixedform)=1
+  }else {
+    RHSForm(fixedform)=nb;  
+  }
+  X=model.matrix(fixedform,fr)
+  if(ncol(X)==0)X=NULL
+  
+  #get random term
+  bars=findbars(RHSForm(formula))
+  if(is.null(bars))Z=NULL else{
+    Z=lapply(bars,FUN=function(x) model.matrix(as.formula(substitute(~-1+foo,list(foo=x[[3]]))),fr))
+    names(Z) <- unlist(lapply(bars, function(x) deparse(x[[3]])))
+  }
+  
+  y <- model.response(fr)
+  
+
   ##G and eigenG must be dealt with separately 
-  if(length(whichNa>0)){
+  if(getG){
     parsedterms0=findterms(formula)
     whichEigenG=which(sapply(parsedterms0,function(a)ifelse(is.call(a),a[[1]]==quote(.eigenG),a==quote(.eigenG))))
     whichG=which(sapply(parsedterms0,function(a)ifelse(is.call(a),a[[1]]==quote(.G),a==quote(.G))))
     if(length(whichEigenG)>0){
-      eval(substitute(denv$eigenG<-eigenG,list(eigenG=parsedterms0[[whichEigenG]][[2]])))
-      eval(substitute(denv$eigenG$U1 <-eigenG$U1[-whichNa, ],list(eigenG=parsedterms0[[whichEigenG]][[2]])))
-    }
-    if(length(whichG)>0){
-      eval(substitute(denv$G<-G,list(G=parsedterms0[[whichG]][[2]])))
-      eval(substitute(denv$G<-G[-whichNa,-whichNa],list(G=parsedterms0[[whichG]][[2]])))
-    }
+     ##this recomputes eigenG. There are more efficient ways of updating eigenG. Do it in a later time 
+      eigenG<-eval(parsedterms0[[whichEigenG]][[2]])
+      if(class(eigenG)!="eigenG")stop(".eigenG() must be used on an eigenG object ")
+      if(length(whichNa)>0)eigenG<-getEigenG(Zg=sweep_prod(eigenG$U1[-whichNa,],sqrt(eigenG$d1),F,2))
+      listZw=Z
+    }else if(length(whichG)>0){
+      G<-eval(parsedterms0[[whichG]][[2]])
+      if(length(whichNa)>0)G<-G[-whichNa,-whichNa]
+      eigenG=getEigenG(G=G)
+      listZw=Z
+    }else if(!is.null(Z)){
+        ncolZ=sapply(Z,function(a){ncola=ncol(a);ifelse(is.null(ncola),1,ncola)})
+        whichMaxcol=which.max(ncolZ)
+        whichEigenG=ifelse(whichMaxcol,whichMaxcol,1)  
+        eigenG=getEigenG(Zg=Z[[whichEigenG]])
+        if (length(Z) > 1) {
+          listZw = Z[-whichEigenG]
+        }else listZw=NULL
+    }else{
+        eigenG=NULL
+        listZw=NULL
+      }
+  }else{
+    eigenG=NULL
+    listZw=NULL
   }
-  denv$whichNa=whichNa
-  denv$n0=n0
-  
-  return(denv)
+
+
+   return(list(Z=Z,X=X,y=y,whichNa=whichNa,n0=n0,eigenG=eigenG,listZw=listZw,fr=fr))
+
+
 }
 
 
@@ -301,127 +353,24 @@ LHSForm <- function(formula) {
 
 
 
-getXyZ=function(formula){
-  
- # denv=parent.env(environment())
- # formula=as.formula(formula,env=denv)
-  fr.form <- subbars(formula) # substitute "|" by "+" 
-  environment(fr.form) <- environment(formula)
-  
-  ##get a whole model.frame before you get X, y, Z to avoid environment contamination.
-  fr=model.frame(fr.form)
-  if(is.null(environment(formula)$n0)){
-    whichNa=as.integer(attr(fr,"na.action"))
-    n0=nrow(fr)+length(whichNa)
-  }else{
-    whichNa=environment(formula)$whichNa
-    n0=environment(formula)$n0
-  }
-  
-  ##get fixed term
-  fixedform <- formula
-  nb <- nobars(RHSForm(fixedform))
-  
-  if(is.null(nb)){
-      RHSForm(fixedform)=1
-    }else {
-     RHSForm(fixedform)=nb;  
-  }
-X=model.matrix(fixedform,fr)
-if(ncol(X)==0)X=NULL
-  
-  #get random term
-  bars=findbars(RHSForm(formula))
-  if(is.null(bars))Z=NULL else{
-    Z=lapply(bars,FUN=function(x) model.matrix(as.formula(substitute(~-1+foo,list(foo=x[[3]]))),fr))
-    names(Z) <- unlist(lapply(bars, function(x) deparse(x[[3]])))
-  }
-  
-  y <- model.response(fr)
-  return(list(Z=Z,X=X,y=y,whichNa=whichNa,n0=n0))
-  
-}
-
 getFaST = function(formula,data=NULL,Zt = NULL) {
-  if(is.null(data)){
-    denv=environment(formula)
-  }else{
-    denv=checkData(formula,data)
-    formula=removeDollar(formula)
-    environment(formula)=denv
-  }
- 
-  parsedterms=findterms(formula)
-  ##get X, y, eigenG and Zwlist from formula
-  whichEigenG=which(sapply(parsedterms,function(a)ifelse(is.call(a),a[[1]]==quote(.eigenG),a==quote(.eigenG))))
-  whichG=which(sapply(parsedterms,function(a)ifelse(is.call(a),a[[1]]==quote(.G),a==quote(.G))))
-  if(length(whichG)>0 & length(whichEigenG)>0){stop("can only supply one of G and eigenG")}
-  if(length(whichG)>1 | length(whichEigenG)>1){stop("only one term is allowed to be G or eigenG")}
-  
-  if(length(whichEigenG)>0 | length(whichG)>0){
-    if(length(whichEigenG)>0){
-      eigenG<-eval(parsedterms[[whichEigenG]][[2]],envir=denv) ##evaluate eigenG in the environment of the formula
-      if(class(eigenG)!="eigenG")stop(".eigenG() must be used on an eigenG object ")
-    }
-    if(length(whichG)>0){
-      eigenG=getEigenG(G=eval(parsedterms[[whichG]][[2]],envir=denv))
-    }
-    formNoG=formula
-    nG=noCallPattern(RHSForm(formNoG),call.pattern=c(as.name(".eigenG"),as.name(".G")))
-    if(is.null(nG)) RHSForm(formNoG)=1 else RHSForm(formNoG)=nG
-      XyZw=getXyZ(formNoG)
-      listZw=XyZw$Z
-      X=XyZw$X
-      y=XyZw$y
-      whichNa=XyZw$whichNa
-      n0=XyZw$n0
-      rm("XyZw")
-  }else{
-      XyZ=getXyZ(formula)
-      Z=XyZ$Z
-      if(!is.null(Z)){
-        ncolZ=sapply(Z,function(a){ncola=ncol(a);ifelse(is.null(ncola),1,ncola)})
-        whichMaxcol=which.max(ncolZ)
-        whichEigenG=ifelse(whichMaxcol,whichMaxcol,1)  
-        eigenG=getEigenG(Zg=Z[[whichEigenG]])
-        if (length(Z) > 1) {
-          listZw = Z[-whichEigenG]
-        }else listZw=NULL
-      }else{
-         eigenG=NULL
-         listZw=NULL
-      }
-      X=XyZ$X
-      y=XyZ$y
-      whichNa=XyZ$whichNa
-      n0=XyZ$n0
-      rm("XyZ")
-  }
-  
-  
-	out = list()
-	out$n0 = n0
-	out$y = y
-	out$whichNa = whichNa
-	out$n = length(y)
-  
+  out=checkData(formula,data,getG=T)
+  eigenG<-out$eigenG
   if(!is.null(eigenG)){
     ##need more careful check to deal with Na
-    if(nrow(eigenG$U1)==n0 & (length(whichNa) > 0) ){ 
-        eigenG$U1 = eigenG$U1[-whichNa, ]
-    }
 		out$U1 = eigenG$U1
 		out$d1 = eigenG$d1
 		out$nd = length(out$d1)
+    out$n=length(out$y)
 		out$tU1y = crossprod(out$U1, out$y)
 		if (out$nd < out$n) {
 			out$tyy = sum(out$y^2)
 		}
-	}	
+	}
 	#must be outside of if!(is.null(Z)), otherwise, X and Zt will not be updated i nto FaST
-	updateFaST.X(out, X)
-	updateFaST.Zw(out, listZw)
-	updateFaST.Zt(out, Zt)
+	updateFaST.X(out, out$X)
+	updateFaST.Zw(out, out$listZw)
+	updateFaST.Zt(out, out$Zt)
 	out$formula=formula
 	class(out) = c("FaST")
 	return(out)
@@ -431,31 +380,35 @@ getFaST = function(formula,data=NULL,Zt = NULL) {
 # should be able to replace and subtract in the future
 ##do not update Zt.
 
-FaST.add<-function(FaST,newformula){
+FaST.add<-function(FaST,newformula,data=NULL){
+  #... further arguments passed to data.frame.
 	oldformula=FaST$formula
 	newformula=update.formula(oldformula,newformula)
 	oldterms=findterms(oldformula)
 	newterms=findterms(newformula)
 	addterms=setdiff(newterms,oldterms)
 	dropterms=setdiff(oldterms,newterms)
+
 	if(length(dropterms)>0){
 		stop("currently do not support drop terms from the oldformula")
 	}
 	if(length(addterms)==0){
 		return(FaST)
 	}
-	
+	if(class(data)=="model.frame"){
+	  #warning("data is model.frame, only pure names in the formula can be properly dealt\n")
+	}
 	##if original FaST does not contain U1, get FaST from scratch.
 	if(is.null(FaST$U1)){
     n0=FaST$n0
     whichNa=FaST$whichNa
-		FaST=getFaST(newformula)
+		FaST=getFaST(newformula,data=data)
     FaST$n0=n0
     FaST$whichNa=whichNa
 	}else{
     add.formula=as.formula(paste0("~-1+",paste0(addterms,collapse="+")))
     environment(add.formula)=environment(newformula)
-		addMatrix=getXyZ(add.formula)
+		addMatrix=checkData(add.formula,data=data,getG=F,na.action=na.pass)
 		addMatrix.Z=addMatrix$Z
 		addMatrix.X=addMatrix$X
 		rm("addMatrix")

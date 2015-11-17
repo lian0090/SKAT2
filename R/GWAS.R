@@ -38,12 +38,6 @@ GWAS= function(formula, GxE.formula, data=NULL, setsize=20, sets=NULL, methods =
   ##if formula is too long, deparse formula will break it into two elements
   combinedform=as.formula(paste( paste0(deparse(formula),collapse=""),paste0(deparse(RHSForm(GxE.formula)),collapse=""),sep="+"))
   combinedform=replaceTerm(combinedform,movingTerm,1)
-   denv= checkData(combinedform,data)
-   formula=removeDollar(formula)
-   environment(formula)=denv
-   n0=denv$n0
-   whichNa=denv$whichNa
-  
   last.term=findTrueTerms(parsed.terms[[nterms]])[[1]]
   if(is.null(methods)){
     if(!is.null(findbars(parsed.terms[[nterms]]))) methods="Score" else methods="SSNP.P3D.LR"
@@ -59,27 +53,19 @@ GWAS= function(formula, GxE.formula, data=NULL, setsize=20, sets=NULL, methods =
   #update sets   
   if(is.null(sets))eval(substitute(sets<-rep(c(1:ceiling(ncol(M)/setsize)), each = setsize)[1:ncol(M)],list(M=movingTerm)))
   nSets = length(unique(sets))
-  
   #container for output         
   out = matrix(nrow = nSets, ncol = nmethods)
   colnames(out)=c(methodsZ,methodsX)
   
   ##start fitting NULL model or get FaST         
   if(nterms==0){
-    stop("must supply test terms")
+    stop("must supply test terms\n")
   }
   whichM=which(containM)
   whichNoM=which(!containM)
   formM=formNoM=NULL
   NULL.NoM=setdiff(whichNoM,nterms)
   NULL.M=setdiff(whichM,nterms)
-  #The last term is one to be tested. if it is not in the moving window. for example M+E, E is not the moving window, therefore, the test matrix only need to be obtained once.
-  if((!containM[nterms])){
-    form.testMatrix=removeDollar(as.formula(paste0("~-1+",term.labels[nterms])))
-    environment(form.testMatrix)=denv
-    testMatrix=model.matrix(form.testMatrix)
-    testMatrix=checkVar(testMatrix)
-  }
   
   ##NULL model for the part not in the moving window.   
   
@@ -88,40 +74,54 @@ GWAS= function(formula, GxE.formula, data=NULL, setsize=20, sets=NULL, methods =
   }else{
     NULLformNoM=formula
   }		
-  NULLformNoM=removeDollar(NULLformNoM)
-  environment(NULLformNoM)=denv
-  
+  envG=new.env()
+ 
   ##if no terms in the moving window is in the NULL model, we only need to fit a single NULL model.
   if(length(NULL.M)==0){
-    fit0=fitNULL(NULLformNoM)
+    fit0=fitNULL(NULLformNoM,data=data)
+    whichNa=fit0$FaST$whichNa
+    n0=fit0$FaST$n0
+    fr=fit0$FaST$fr
   }else{
     #every set needs its only NULL model.
-    FaST0NoM=getFaST(NULLformNoM)
+    FaST0NoM=getFaST(NULLformNoM,data=data)
+    whichNa=FaST0NoM$whichNa
+    n0=FaST0NoM$n0
+    fr=fit0$fr
    # NULLformMi=as.formula(paste0("~.+",paste0(gsub(term.labels[1],"Mi",deparsed.terms[NULL.M],fixed=T),collapse="+")))
     NULLformMi=replaceTerm(as.formula(paste0("~.+",paste0(deparsed.terms[NULL.M],collapse="+"))),movingTerm,quote(Mi))
-    environment(NULLformMi)=denv
   }
+  
+ #The last term is one to be tested. if it is not in the moving window. for example M+E, E is not the moving window, therefore, the test matrix only need to be obtained once.
+ if((!containM[nterms])){
+   form.testMatrix=as.formula(paste0("~-1+",term.labels[nterms]))
+   testMatrix=model.matrix(form.testMatrix,data=model.frame(form.testMatrix,data=data,na.action=na.pass))
+   testMatrix=checkVar(testMatrix)
+   testMatrix=checkNA(testMatrix,n0=n0,whichNa=whichNa)
+ }
+ 
+ 
   
   for (i in 1:nSets) {
     cat("set",i,"\n")
     if(setsize>1){whichSeti=which(sets==i)}else whichSeti=i
     Mi=as.matrix(eval(substitute(M[,whichSeti],list(M=movingTerm))))
-    Mi=checkNA(Mi,n0=n0,whichNa=whichNa)
-    denv$Mi=Mi
+    Mi=meanImpute(Mi)
+    data$Mi=Mi
     ##should add methods to check the rank of Mi
     if(length(NULL.M)>0){
       ##replace the label of moving window by Mi.
       ##this can be optimized by direclty add, substract,or replace on FaST0NoM to save memory
-      FaST0M=FaST.add(FaST0NoM,newformula=NULLformMi)
+      FaST0M=FaST.add(FaST0NoM,newformula=NULLformMi,data=data)
       fit0=fitNULL.FaST(FaST0M)
     }
     
     #get test matrix for every moving window if the test term contains the moving window. 
     if(containM[nterms]){
       #testMatrix=model.matrix(as.formula(paste0("~-1+",gsub(term.labels[1],"Mi",term.labels[nterms],fixed=T))))
-      form.testMatrix=removeDollar(as.formula(paste0("~-1+",deparse(replaceTerm(last.term,movingTerm, quote(Mi))))))
-      environment(form.testMatrix)=denv
-      testMatrix=model.matrix(form.testMatrix)
+      form.testMatrix=as.formula(paste0("~-1+",deparse(replaceTerm(last.term,movingTerm, quote(Mi)))))
+      testMatrix=model.matrix(form.testMatrix,data=model.frame(form.testMatrix,data=data,na.action=na.pass))
+      if(length(whichNa)>0)testMatrix=testMatrix[-whichNa,]
       testMatrix=checkVar(testMatrix)
     }
     

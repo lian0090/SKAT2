@@ -130,7 +130,7 @@ SEXP C_getDL(SEXP R_var_e, SEXP R_taud, SEXP R_d1, SEXP R_n, SEXP R_tU1y, SEXP R
 			memcpy(tWVdy,tWy,kwT*sizeof(double));
 			matprod(tWU1d,kwT,kd,tU1y,kd,1,tWVdy,'N','N',1,1/var_e);
 		}else{
-			//tWU1d
+			//tWU1
 			sweep_prod(tU1W,d_sharp,tWU1d,kd,kwT,'T',2);
 			//tXVdW
 			matprod(tXU1d,kx,kd,tU1W,kd,kwT,tXVdW,'N','N',1,0);
@@ -273,9 +273,10 @@ SEXP C_getDL(SEXP R_var_e, SEXP R_taud, SEXP R_d1, SEXP R_n, SEXP R_tU1y, SEXP R
 		if(ISNA(tU1Zt[0]))error("tU1Zt is NULL, cannot get Q and S");
         int kt= INTEGER(getAttrib(R_tU1Zt,R_DimSymbol))[1];
 
-		double *tXVinvZt =(double *)R_alloc(kx*kt,sizeof(double));
-		double *tyVdZt =(double *)R_alloc(kt,sizeof(double));
-		double *tZtVinvZt =(double *)R_alloc(kt*kt,sizeof(double));
+        double *tXVinvZt,*tyVdZt,*tZtVinvZt;
+        tXVinvZt=(double *)R_alloc(kx*kt,sizeof(double));
+		tyVdZt =(double *)R_alloc(kt,sizeof(double));
+		tZtVinvZt =(double *)R_alloc(kt*kt,sizeof(double));
 		
 		if(kd<n){
 			//tXVinvZt
@@ -329,7 +330,7 @@ SEXP C_getDL(SEXP R_var_e, SEXP R_taud, SEXP R_d1, SEXP R_n, SEXP R_tU1y, SEXP R
 			}
 			//tWVdZt
 			if(nw>0){
-				double *tWVdZt =(double *)R_alloc(kwT*kt,sizeof(double));
+				tWVdZt =(double *)R_alloc(kwT*kt,sizeof(double));
 				matprod(tWU1d,kwT,kd,tU1Zt,kd,kt,tWVdZt,'N','N',1,0);	
 			}			
 		}
@@ -340,17 +341,8 @@ SEXP C_getDL(SEXP R_var_e, SEXP R_taud, SEXP R_d1, SEXP R_n, SEXP R_tU1y, SEXP R
 		matprod(hat_alpha,kx,1,tXVinvZt,kx,kt,LQ,'T','N',-1,1);
 		if(nw>0){
 			double *Cgamma_tWVdZt=(double *)calloc(kwT*kt,sizeof(double));
-  /*          printf("bk2\n");
-    //        if(Cgamma_tWVdZt==NULL)printf("NULL pointer\n");else{printf("pointer no NULL");}
-            int kk;for(kk=0;kk<10;kk++)printf("cgammad:%f\n",Cgamma[kk]);
-            printf("kwT:%d\n",kwT);
-            printf("kt:%d\n",kt);
-            printf("tWVdZt:%f\n",tWVdZt[kwT*kt-1]);
-            printf("Cgamma_tWVdZt:%f\n",Cgamma_tWVdZt[kwT*kt-1]);
-   */
+            if(Cgamma_tWVdZt==NULL)error("NULL pointer, no memory available for Cgamma_tWVdZt\n");
 			matprod(Cgamma,kwT,kwT,tWVdZt,kwT,kt,Cgamma_tWVdZt,'N','N',1,0);
-//printf("bk3\n");
-
 			matprod(tehatVdW,1,kwT,Cgamma_tWVdZt,kwT,kt,LQ,'N','N',-1,1);
 			matprod(tWVdZt,kwT,kt,Cgamma_tWVdZt,kwT,kt,tZtVinvZt,'T','N',-1,1);
 			matprod(tXVdW,kx,kwT,Cgamma_tWVdZt,kwT,kt,tXVinvZt,'N','N',-1,1);		
@@ -365,7 +357,7 @@ SEXP C_getDL(SEXP R_var_e, SEXP R_taud, SEXP R_d1, SEXP R_n, SEXP R_tU1y, SEXP R
 		
 		double *tZtPZt;
 		tZtPZt =(double *) calloc(kt*kt,sizeof(double));
-		if(tZtPZt==NULL)error("NULL pointer, no memory available");
+		if(tZtPZt==NULL)error("NULL pointer, no memory available for tZtPZt");
 		//tZtPZt =(double *) R_alloc(kt*kt,sizeof(double));
 
 		memcpy(tZtPZt,tZtVinvZt,sizeof(double)*kt*kt);

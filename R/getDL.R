@@ -1,3 +1,8 @@
+#Z=sweep(op(X),v,MARGINopX,"*")
+sweep_prod=function(X,v,transX,MARGINopx){
+ return(.Call("Rsweep_prod",X,v,as.integer(transX),MARGINopx) )
+}
+
 ##reduce the initial values of var
 reduceInitVar = function(nw, VarRel) {
 		namesPar = c("VarE", "VarG")
