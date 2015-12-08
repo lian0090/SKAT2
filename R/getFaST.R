@@ -1,14 +1,13 @@
 ##return environments without dollar signs for variable names
 checkData=function(formula,data,getG=F,...){
   ##... further parameters passed to model.frame such as na.action
-  noGform=noCallPattern(subbars(formula),call.pattern=c(as.name(".eigenG"),as.name(".G")))
-  noGform=subbars(noGform)  
+  noGform=noCallPattern(formula,call.pattern=c(as.name(".eigenG"),as.name(".G")))
   environment(noGform)=environment(formula)
   
   if (is.null(data)) {
-    fr=model.frame(noGform,...)
+    fr=model.frame(subflags(noGform),...)
   } else {
-    fr=model.frame(noGform,data=data,...)
+    fr=model.frame(subflags(noGform),data=data,...)
   }
   #names(fr)=gsub(".*\\$(.*)$","\\1",names(fr))
   #denv=list2env(fr)  
@@ -26,7 +25,7 @@ checkData=function(formula,data,getG=F,...){
   
   ##get fixed term
   fixedform <- noGform
-  nb <- nobars(RHSForm(fixedform))
+  nb <- noCallPattern(RHSForm(fixedform),call.pattern=as.name(".R"))
   
   if(is.null(nb)){
     RHSForm(fixedform)=1
@@ -37,10 +36,10 @@ checkData=function(formula,data,getG=F,...){
   if(ncol(X)==0)X=NULL
   
   #get random term
-  bars=findbars(RHSForm(formula))
+  bars=findCallPattern(RHSForm(formula),as.name(".R"))
   if(is.null(bars))Z=NULL else{
-    Z=lapply(bars,FUN=function(x) model.matrix(as.formula(substitute(~-1+foo,list(foo=x[[3]]))),fr))
-    names(Z) <- unlist(lapply(bars, function(x) deparse(x[[3]])))
+    Z=lapply(bars,FUN=function(x) model.matrix(as.formula(substitute(~-1+foo,list(foo=x[[2]]))),fr))
+    names(Z) <- unlist(lapply(bars, function(x) deparse(x[[2]])))
   }
   
   y <- model.response(fr)
@@ -79,9 +78,7 @@ checkData=function(formula,data,getG=F,...){
     listZw=NULL
   }
 
-
    return(list(Z=Z,X=X,y=y,whichNa=whichNa,n0=n0,eigenG=eigenG,listZw=listZw,fr=fr))
-
 
 }
 
@@ -91,36 +88,7 @@ asCall=function(a){
   a=RHSForm(a)
   return(a)
 }
-expandDoubleVerts <- function(term)
-{
-    expandDoubleVert <- function(term) {
-	frml <- formula(paste0("~", deparse(term[[2]])))
-	## need term.labels not all.vars to capture interactions too:
-	newtrms <- paste0("0+", attr(terms(frml), "term.labels"))
-	if(attr(terms(frml), "intercept")!=0)
-	    newtrms <- c("1", newtrms)
-	as.formula(paste("~(",
-			 paste(vapply(newtrms, function(trm)
-				      paste0(trm, "|", deparse(term[[3]])), ""),
-			       collapse=")+("), ")"))[[2]]
-    }
 
-    if (!is.name(term) && is.language(term)) {
-	if (term[[1]] == as.name("(")) {
-	    term[[2]] <- expandDoubleVerts(term[[2]])
-	}
-	stopifnot(is.call(term))
-	if (term[[1]] == as.name('||'))
-	    return( expandDoubleVert(term) )
-	## else :
-	term[[2]] <- expandDoubleVerts(term[[2]])
-	if (length(term) != 2) {
-	    if(length(term) == 3)
-		term[[3]] <- expandDoubleVerts(term[[3]])
-	}
-    }
-    term
-}
 
 RHSForm <- function(formula) {
     formula[[length(formula)]]
@@ -130,96 +98,27 @@ RHSForm <- function(formula) {
     formula[[length(formula)]] <- value
     formula
 }
- findbars<-
-function (term) 
-{
-    fb <- function(term) {
-        if (is.name(term) || !is.language(term)) 
-            return(NULL)
-        if (term[[1]] == as.name("(")) 
-            return(fb(term[[2]]))
-        stopifnot(is.call(term))
-        if (term[[1]] == as.name("|")) 
-            return(term)
-        if (length(term) == 2) 
-            return(fb(term[[2]]))
-        c(fb(term[[2]]), fb(term[[3]]))
-    }
-    expandSlash <- function(bb) {
-        makeInteraction <- function(x) {
-            if (length(x) < 2) 
-                return(x)
-            trm1 <- makeInteraction(x[[1]])
-            trm11 <- if (is.list(trm1)) 
-                trm1[[1]]
-            else trm1
-            list(substitute(foo:bar, list(foo = x[[2]], bar = trm11)), 
-                trm1)
-        }
-        slashTerms <- function(x) {
-            if (!("/" %in% all.names(x))) 
-                return(x)
-            if (x[[1]] != as.name("/")) 
-                stop("unparseable formula for grouping factor")
-            list(slashTerms(x[[2]]), slashTerms(x[[3]]))
-        }
-        if (!is.list(bb)) 
-            expandSlash(list(bb))
-        else unlist(lapply(bb, function(x) {
-            if (length(x) > 2 && is.list(trms <- slashTerms(x[[3]]))) 
-                lapply(unlist(makeInteraction(trms)), function(trm) substitute(foo | 
-                  bar, list(foo = x[[2]], bar = trm)))
-            else x
-        }))
-    }
-    modterm <- expandDoubleVerts(if (is(term, "formula")) 
-        term[[length(term)]]
-    else term)
-    expandSlash(fb(modterm))
-}
 
 
- nobars<-
-function (term) 
-{
-    if (!any(c("|", "||") %in% all.names(term))) 
-        return(term)
-    if (is.call(term) && term[[1]] == as.name("|")) 
-        return(NULL)
-    if (is.call(term) && term[[1]] == as.name("||")) 
-        return(NULL)
-    if (length(term) == 2) {
-        nb <- nobars(term[[2]])
-        if (is.null(nb)) 
-            return(NULL)
-        term[[2]] <- nb
-        return(term)
-    }
-    nb2 <- nobars(term[[2]])
-    nb3 <- nobars(term[[3]])
-    if (is.null(nb2)) 
-        return(nb3)
-    if (is.null(nb3)) 
-        return(nb2)
-    term[[2]] <- nb2
-    term[[3]] <- nb3
-    term
+
+ 
+subflags=function(term){
+  if(is.name(term)||!is.language(term))return(term)
+  if(length(term)==2){
+    if(is.call(term)&&term[[1]] == as.name(".G"))
+      term=term[[2]]
+    if(is.call(term)&&term[[1]]==as.name(".eigenG"))
+      term=term[[2]]
+    if(is.call(term)&&term[[1]]==as.name(".R"))
+      term=term[[2]]
+  }
+  if(length(term)>=2){
+  for(j in 2:length(term)) term[[j]]=subflags(term[[j]])
+  }
+    return(term)
+  
 }
-subbars <- function(term)
-{
-    if (is.name(term) || !is.language(term)) return(term)
-    if (length(term) == 2) {
-        term[[2]] <- subbars(term[[2]])
-        return(term)
-    }
-    stopifnot(length(term) >= 3)
-    if (is.call(term) && term[[1]] == as.name('|'))
-        term[[1]] <- as.name('+')
-    if (is.call(term) && term[[1]] == as.name('||'))
-        term[[1]] <- as.name('+')
-    for (j in 2:length(term)) term[[j]] <- subbars(term[[j]])
-    term
-}
+
 
 
 ###findterms as orignal form ()
@@ -249,6 +148,9 @@ findterms<- function(term) {
 	return(term)
 }
 
+
+
+
 replaceTerm=function(term, pattern=NULL, replace=quote(Mi)){
   
   ft<-function(term){
@@ -273,24 +175,6 @@ replaceTerm=function(term, pattern=NULL, replace=quote(Mi)){
   return(ft(term))
   
 }
-removeDollar=function(term){
-  ft<-function(term){
-    if(length(term)>1){
-      if(term[[1]]==as.name("$")) term=ft(term[[3]]) else {
-        if(length(term)==2)term[[2]]=ft(term[[2]])
-        if(length(term)==3){
-          term[[2]]=ft(term[[2]])
-          term[[3]]=ft(term[[3]])
-        }
-      }
-      
-    }
-      return(term)
-   
-  }
-  return(ft(term))
-  
-}
 
 
 findTrueTerms=function(term){
@@ -306,6 +190,7 @@ findTrueTerms=function(term){
       if(term[[1]]==as.name("|")) return(ft(term[[3]]))
       if(term[[1]]==as.name(".eigenG"))return(ft(term[[2]]))
       if(term[[1]]==as.name(".G"))return(ft(term[[2]]))
+      if(term[[1]]==as.name(".R"))return(ft(term[[2]]))
       return(term)
     }
     if(is.atomic(term))return(NULL)
@@ -340,6 +225,25 @@ noCallPattern=function(term,call.pattern=c(as.name(".eigenG"),as.name(".G"))){
  term[[2]] <- nb2
  term[[3]] <- nb3
  term
+}
+
+##return a list of items that has call.pattern
+findCallPattern=function(term,call.pattern){
+  
+  #call.pattern=as.name(".eigenG")
+  if(length(call.pattern)!=1)stop("call.pattern must be have only 1 term\n")
+  fc=function(term,call.pattern){
+    if (is.name(term) || !is.language(term)) 
+      return(NULL)
+    if (term[[1]] == call.pattern) 
+      return(term)
+    if (length(term) == 2) 
+      return(fc(term[[2]],call.pattern))
+    c(fc(term[[2]],call.pattern), fc(term[[3]],call.pattern))
+  }
+  term=fc(term,call.pattern)
+  if(!is.list(term) & !is.null(term))term=list(term)
+  return(term)
 }
 
 

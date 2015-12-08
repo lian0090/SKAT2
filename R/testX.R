@@ -137,7 +137,6 @@ testX = function(fit0, Xt, methods = c("SSNP.P3D.LR","SSNP.P3D.t","SSNP.LR","SSN
      	}
      }
         	
-            
 	
 	return(out)
 
