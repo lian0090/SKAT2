@@ -104,7 +104,7 @@ fit.optim = function(FaST, VarRel=NULL, logVar = T, optimizer = "bobyqa") {
 	fit$Var = Var
  
   if(length(fit$Var)>2){
-    names(fit$Var)=c("var_e",attr(FaST$eigenG,"termName"),names(listZw))
+    names(fit$Var)=c("var_e",attr(FaST$eigenG,"termName"),names(FaST$listZw))
   }else{
     names(fit$Var)[1:2]=c("var_e",attr(FaST$eigenG,"termName"))
   }
