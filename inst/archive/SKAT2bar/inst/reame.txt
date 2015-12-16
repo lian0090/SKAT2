@@ -1,3 +1,0 @@
-Armadillo employs a delayed evaluation approach to combine several operations into one and reduce (or eliminate) the need for temporaries. Where applicable, the order of operations is optimised. Delayed evaluation and optimisation are achieved through recursive templates and template meta-programming.
-
-So, even if C++ itself is slower than C, the optimized algorithms should be faster.  
