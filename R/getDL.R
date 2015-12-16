@@ -91,7 +91,7 @@ expandVar = function(Var, logVar, VarRel) {
 	return(Var)
 }
 
-
+##does not depend on the real names of Var. 
 getDL = function(Var, FaST, getQ = F, getS = F, getNeg2Log = T, REML = T, getAlphaHat=F) {
 	if (FaST$nw == 0) {
 		VarW = NULL

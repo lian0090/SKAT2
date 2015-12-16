@@ -30,13 +30,14 @@
 # }
 
 
-testX = function(fit0, Xt, methods = c("SSNP.P3D.LR","SSNP.P3D.t","SSNP.LR","SSNP.t")[1]) {
+testX = function(fit0, Xt, methods = c("SSNP.P3D.LR")) {
+  #"SSNP.P3D.t","SSNP.LR","SSNP.t"
 	##Var is the variance for the NULL model, without fitting the test SNPs 
 	#P3D=T, NULL model and alternative model share the same variance components.	
 	##if Xt is NULL return NA
 
 	if(is.null(Xt)) return(NA)	
-	if (grepl("\\.FaST",class(fit0))) {
+	if (class(fit0)=="FaST") {
 		#for t-test when P3D is False. Otherwise, use lm or lmm for fit0.
 		if(any(grepl("\\.P3D",methods)) | any(grepl("\\.LR",methods))) stop("must supply a fitted fit0 from fitNULL if P3D is true or if LR in methods")	
 		Var0=NA
@@ -45,11 +46,11 @@ testX = function(fit0, Xt, methods = c("SSNP.P3D.LR","SSNP.P3D.t","SSNP.LR","SSN
 		#fit0 as lmm or lm is only needed for LR or P3D. Not used for SSNP.t
 	 if(class(fit0)=="lmm"){
 	 	Var0 = fit0$Var
-	 	ln0 = -1/2*getDL(Var0, fit0$FaST, getNeg2Log = T, REML = F)$neg2logLik
+	 	ln0 =  -1/2*getDL(fit0$Var, fit0$FaST, getNeg2Log = T, REML = F)$neg2logLik
 	 }
 	 if(class(fit0)=="lm") {
 	 	Var0=NA
-	 	ln0=logLik(fit0,REML=F)
+	 	ln0=logLik(fit0)
 	 }
 	}
 	 class.fit0=class(fit0)
@@ -79,7 +80,7 @@ testX = function(fit0, Xt, methods = c("SSNP.P3D.LR","SSNP.P3D.t","SSNP.LR","SSN
 	 P3D.methods=grep("\\.P3D",methods,value=T)
 	 NP.methods=setdiff(methods,P3D.methods)
 	
-	if (class.fit0 %in% c("lm","lm.FaST")) {
+	if (is.null(FaST1$U1)) {
 		##P3D is irrelavent for lm models
 		fit1 = fitNULL.FaST(FaST1)
 			if (length(LR.methods)>0) {
@@ -92,7 +93,7 @@ testX = function(fit0, Xt, methods = c("SSNP.P3D.LR","SSNP.P3D.t","SSNP.LR","SSN
 				out$p.value[t.methods]=p.t
 				}
 		##end methods for NULL Z0
-		} else if (class.fit0 %in% c("lmm","lmm.FaST")){
+		} else {
 			        
   get.test.lmm<-function(out,FaST1,ln0,Var0,Var1,methods,ntest){
        outDL = getDL(Var1, FaST1, getNeg2Log = T, REML = F, getAlphaHat=T)

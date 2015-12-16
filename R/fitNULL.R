@@ -102,47 +102,52 @@ fit.optim = function(FaST, VarRel=NULL, logVar = T, optimizer = "bobyqa") {
 	Var = fit$par
 	Var = expandVar(Var, logVar, VarRel)
 	fit$Var = Var
-	fit$loglik = -1/2 * fit$value
-	if (logVar == T) {
-		fit$par = exp(fit$par)
-	}
+ 
+  if(length(fit$Var)>2){
+    names(fit$Var)=c("var_e",attr(FaST$eigenG,"termName"),names(Zwlist))
+  }else{
+    names(fit$Var)[1:2]=c("var_e",attr(FaST$eigenG,"termName"))
+  }
+	fit$par=NULL
+  fit$loglikREML = -1/2 * fit$value
+  fit$value=NULL
 	return(fit)
 
 }
 
 
-fitNULL=function(null.formula,data=NULL,fit=T){
+fitNULL=function(null.formula,data=NULL){
+   ##Var0: variance for NULL model
    FaST=getFaST(null.formula,data=data)
-   out=fitNULL.FaST(FaST,fit=fit)
+   out=fitNULL.FaST(FaST)
    return(out)
   }
-   
-fitNULL.FaST=function(FaST,fit=T){
-   if(fit){
+
+#FaST changed, but Var not changing, for P3D methods
+updatefitNULLFaST=function(fit0,FaST){
+  if(class(fit0)=="lm") stop("cannot update fit0 inherited from lm")
+  fit0$FaST=FaST
+  #fit0$loglikML=-1/2*getDL(fit0$Var, FaST, getNeg2Log = T, REML = F)$neg2logLik
+  fit0$loglikREML=-1/2*getDL(fit0$Var, FaST, getNeg2Log = T, REML = T)$neg2logLik
+}
+
+fitNULL.FaST=function(FaST){
    y=FaST$y
    X=FaST$X
    if (is.null(FaST$U1)) {
      out=lm(y~-1+X)
 	   out$FaST=FaST
 	   out$Var=summary(out)$sigma^2
-	   names(out$Var)="VarE"
-	   #out$loglik=logLik(fit0,REML=T)
+	   names(out$Var)="var_e"
+	   out$loglik=logLik(out,REML=T)
 	   class(out)="lm"
 	   return(out)
 	} else {
-	out = fit.optim(FaST, VarRel=NULL,logVar = T,  optimizer = "bobyqa" )
-	out$FaST=FaST	
-	class(out) = c("lmm")
-	}	
-	}else{
-	 	out=list(FaST=FaST)
-	 	if(is.null(FaST$U1)){
-	 		class(out)="lm.FaST"
-	 	}else{
-	 		class(out)="lmm.FaST"
-	 	}
-	}
-	return(out)
+    out=fit.optim(FaST, VarRel=NULL,logVar = T,  optimizer = "bobyqa" )
+    out$FaST=FaST
+    class(out) = c("lmm")
+    return(out)
+	  }	
 }
 
 
