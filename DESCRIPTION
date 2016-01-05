@@ -9,3 +9,4 @@ Description: SKAT2 test random components in mixed effect models. It works the s
 License: GPL (>= 2)
 Depends: R (>= 2.13.0), minqa
 NeedsCompilation: yes
+Suggests: testthat

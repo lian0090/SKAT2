@@ -209,11 +209,9 @@ f("abd")
 f("abddd")
 stop("a",rnorm(1))
 source("/Users/lianlian/Dropbox/work/AssociationMapping/humanGxE/SKAT2/R/GWS.P3D.R")
-source("/Users/lianlian/Dropbox/work/AssociationMapping/humanGxE/SKAT2/R/GWS.P3D.R")
 oldformula
 a=1
 formula(a)=a~1
-source("/Users/lianlian/Dropbox/work/AssociationMapping/humanGxE/SKAT2/R/getFaST.R")
 source("/Users/lianlian/Dropbox/work/AssociationMapping/humanGxE/SKAT2/R/getFaST.R")
 data(mice)
 fast1=getFaST(mice.pheno$Obesity.BMI~list(Z1=mice.X[,1:20]))
@@ -707,7 +705,6 @@ X2=mice.X[,21]#
 y=mice.pheno$Obesity.BMI#
 fast1=getFaST(y~X1)
 str(fast1)
-str(fast1)
 updateFaST(fast1,y~X1+X2)
 fast1
 str(fast1)
@@ -720,7 +717,6 @@ Z=list(X1,X2)
 str(Z)
 do.call(class,Z)
 do.call(Z,class)
-do.call(Z,class)
 ?do.call
 dim(Z)
 class(Z)
@@ -728,7 +724,6 @@ do.call(class,Z)
 sapply(class,Z)
 sapply(Z,class)
 match("eigenG",sapply(Z,class))
-match("eigenG",sapply(Z,class),0)
 match("eigenG",sapply(Z,class),0)
 Z=c(Z,getEigenG(Zg=mice.X[,25:30]))
 str(Z)
@@ -1025,7 +1020,6 @@ ncolZ
 whichMaxcol=which.max(ncolZ)
 whichMaxcol
 eigenG = ifelse(whichMaxcol,getEigenG(Zg=Z[[whichMaxcol]]),getEigenG(Zg=Z[[1]]))
-eigenG = ifelse(whichMaxcol,getEigenG(Zg=Z[[whichMaxcol]]),getEigenG(Zg=Z[[1]]))
 getEigenG=function(G=NULL,Zg=NULL,precision=1e-5){#
   out=list()#
   if(!is.null(G) & !is.null(Zg)) stop("Only use one of G or Zg")#
@@ -1274,3 +1268,5 @@ nSets = length(unique(sets))#
        }#
       return(out)#
 }
+pi
+source("/Users/lianlian/Dropbox/work/AssociationMapping/humanGxE/SKAT2/R/bruteNeg2Loglik.R")

@@ -14,5 +14,6 @@
 		    double *y, int nry, int ncy, double *z, char transa, char transb,double alpha, double beta);
  void sEigenValue(double *x, int n, double *values);
  double determinant(double *X, int n, int useLog);
+ SEXP C_matinv(SEXP R_A);
 
 #endif

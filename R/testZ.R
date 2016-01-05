@@ -1,29 +1,24 @@
-testZ = function(fit0, Zt, methods = "Score") {
+testZ = function(fit0, Ztest, methods = "Score") {
   
   out = vector("list",length=4)
   names(out)=c("Score","sdScore","p.value","Q")
   out$p.value=rep(NA,length=2)
   names(out$p.value)=c("Score","SKAT")
   
-  updateFaST.Zt(fit0$FaST, Zt)
-  if(is.null(fit0$FaST$Zt)){
+  updateFaST.Ztest(fit0$FaST, Ztest)
+  if(is.null(fit0$FaST$Ztest)){
     return(out)
   }
   
   if (class(fit0) ==c("lm")) {
     X=fit0$FaST$X
+    Ztest=fit0$FaST$Ztest
     resid = residuals(fit0)
     s2 = summary(fit0)$sigma^2
-    Q = sum(crossprod(resid, Zt)^2)/s2/2
-    tXZt = crossprod(X, Zt)
-    Zw.1 = (crossprod(Zt) - t(tXZt) %*% solve(crossprod(X)) %*% tXZt)/2
-    lambda = eigen(Zw.1, symmetric = TRUE, only.values = TRUE)$values
-    lambda1 = lambda
-    IDX1 <- which(lambda >= 0)
-    # eigenvalue bigger than mean(lambda1[IDX1])/100000 
-    IDX2 <- which(lambda1 > mean(lambda1[IDX1])/1e+05)
-    lambda <- lambda1[IDX2]
-    
+    Q = sum(crossprod(resid, Ztest)^2)/s2/2
+    tXZt = crossprod(X, Ztest)
+    Zw.1 = (crossprod(Ztest) - t(tXZt) %*% solve(crossprod(X)) %*% tXZt)/2
+    lambda = eigen(Zw.1, symmetric = TRUE, only.values = TRUE)$values    
     if ("SKAT" %in% methods) {
       out$p.value['SKAT'] <- Get_PValue.Lambda(lambda, Q)$p.value
       out$Q = Q
@@ -46,11 +41,6 @@ testZ = function(fit0, Zt, methods = "Score") {
     if ("SKAT" %in% methods) {
       Q = Qdis$Q
       lambda = Qdis$lambda
-      lambda1 = lambda
-      IDX1 <- which(lambda >= 0)
-      #eigenvalue bigger than mean(lambda1[IDX1])/100000 
-      IDX2 <- which(lambda1 > mean(lambda1[IDX1])/1e+05)
-      lambda <- lambda1[IDX2]
       p.value <- Get_PValue.Lambda(lambda, Q)$p.value
       out$p.value['SKAT'] = p.value
       out$Q = Q

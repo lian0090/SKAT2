@@ -10,7 +10,7 @@
 - `testZ`
 - `testX`
 
-## Basic call of the GWAS function
+## Basic call of the GWAS function (GWAS function need to be updated, has not fully tested yet)
  ```R
  library(SKAT2)
  data(mouse)
@@ -141,7 +141,7 @@ pvalue=GWAS(formula=Obesity.BMI~GENDER+.eigenG(mouse.eigenG),GxE.formula=~mouse.
 Z1=mouse.X[,1:20]
 Z2=mouse.X[,21:40]
 fit0=fitNULL(Obesity.BMI ~GENDER,data=mouse.pheno)
-out=testZ(fit0,Zt=Z1,method="SKAT")
+out=testZ(fit0,Ztest=Z1,method="SKAT")
 > out
 $Score
 NULL
@@ -162,27 +162,26 @@ Z2=mouse.X[,21:40]
 fit0=fitNULL(Obesity.BMI~GENDER+.eigenG(mouse.eigenG)+(1|Z1),data=mouse.pheno)
 testZ(fit0,Z2,methods=c("Score","SKAT"))
 $Score
-[1] 324618.7
+[1] 324760.8
 
 $sdScore
-[1] 1454048
+[1] 1454273
 
 $p.value
     Score      SKAT 
-0.4116698 0.2620787 
+0.4116452 0.2620584 
 
 $Q
-[1] 1676088
-library(SKAT2)
-data(mouse)
-Z1=mouse.X[,1:2]
-Z2=mouse.X[,21:40]
+[1] 1676405
 testMat=model.matrix(~-1+Z1:GENDER,data=mouse.pheno)
+```
+```R
+Missing values might cause some problems
 ####As long as I do not fit Litter together with another random effect, everything works fine
-fit0=fitNULL(Obesity.BMI~GENDER+rnorm(nrow(Z1))+.eigenG(mouse.eigenG)+(1|Z1),data=mouse.pheno)
+fit0=fitNULL(Obesity.BMI~GENDER+rnorm(nrow(Z1))+.eigenG(mouse.eigenG)+.R(Z1),data=mouse.pheno)
 testZ(fit0,testMat,methods=c("Score","SKAT"))
 ###But whenever I fit Litter together with another random effects, R stops: memory not mapped.
-fit0=fitNULL(Obesity.BMI~Litter+.eigenG(mouse.eigenG)+(1|Z1),data=mouse.pheno)
+fit0=fitNULL(Obesity.BMI~Litter+.eigenG(mouse.eigenG)+.R(Z1),data=mouse.pheno)
 testZ(fit0,testMat,methods=c("Score","SKAT"))
 
 ```
@@ -202,7 +201,7 @@ Output
 $p.value
 [1] 0.8228676
 
-> fit0=fitNULL(y~X1+.eigenG(eigenG)+(1|Z1))
+> fit0=fitNULL(y~X1+.eigenG(eigenG)+.R(Z1))
 > testX(fit0,Z2[,1])
 $LR
  SSNP.P3D.LR 
@@ -231,7 +230,75 @@ $Var1$SSNP.P3D.LR
         VarE         VarG        VarW1 
 2.273050e-03 7.077773e-07 2.251884e+02 
 ```
+##Full rank random effects, the bruteforce methods
+This is still under testing
+```R
+library(SKAT2)
+data(mouse)
+y=mouse.pheno$Obesity.BMI[1:100]
+X1=mouse.X[1:100,1:100]
+G1=tcrossprod(X1)
+X2=mouse.X[1:100,101:200]
+G2=tcrossprod(X2)
+fit1=fitNULL(y~.R(X1)+.G(G2))
+fit2=fitNULL(y~.R(X1)+.R(X2))
+fit3=fitNULL(y~.G(G1)+.R(X2))
+system.time({fit4=fitNULL(y~.G(G1)+.G(G2))})
+##make G1 G2 full rank
+fG1=G1+diag(0.01,100)
+fG2=G2+diag(0.01,100)
+> system.time({fit4=fitNULL(y~.G(G1)+.G(G2))})
+   user  system elapsed 
+  0.075   0.001   0.076 
+> fit4
+Call:
+fitNULL(y ~ .G(G1) + .G(G2))
+Variance components for the NULL model:
+       var_e           G1           G2 
+3.170139e-03 1.626729e-12 1.135350e-06 
+> system.time({fit5=fitNULL(y~.G(fG1)+.G(fG2))})
+   user  system elapsed 
+  4.169   0.265   4.455 
+> fit5
+Call:
+fitNULL(y ~ .G(fG1) + .G(fG2))
+Variance components for the NULL model:
+       var_e          fG1          fG2 
+3.170128e-03 6.793328e-13 1.135355e-06 
 
+##how is the speed for 500 individuals
+y=mouse.pheno$Obesity.BMI[1:500]
+X1=mouse.X[1:500,1:500]
+G1=tcrossprod(X1)
+X2=mouse.X[1:500,501:1000]
+G2=tcrossprod(X2)
+
+> system.time({fit1=fitNULL(y~.G(G1)+.G(G2))})
+   user  system elapsed 
+ 91.140   3.451  96.627 
+  
+> fit1
+Call:
+fitNULL(y ~ .G(G1) + .G(G2))
+Variance components for the NULL model:
+       var_e           G1           G2 
+3.822651e-03 3.725261e-12 2.482736e-07 
+
+
+Now lets make them full rank
+fG1=G1+diag(0.01,500)
+fG2=G2+diag(0.01,500)
+> system.time({fit2=fitNULL(y~.G(fG1)+.G(fG2))})
+   user  system elapsed 
+556.395  15.164 573.169 
+fitNULL(y ~ .G(fG1) + .G(fG2))
+Variance components for the NULL model:
+       var_e          fG1          fG2 
+3.822648e-03 4.533408e-12 2.482730e-07 
+
+brute force is even slower, because G1 is not full rank!
+
+```
 
 ## Installation
 

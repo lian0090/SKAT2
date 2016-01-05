@@ -296,7 +296,12 @@ Get_PValue<-function(K,Q){
 
 Get_PValue.Lambda<-function(lambda,Q){
 	
-	#print(lambda)
+	lambda1 = lambda
+    IDX1 <- which(lambda >= 0)
+    #eigenvalue bigger than mean(lambda1[IDX1])/100000 
+    IDX2 <- which(lambda1 > mean(lambda1[IDX1])/1e+05)
+    lambda <- lambda1[IDX2]
+
 	n1<-length(Q)
 
 	p.val<-rep(0,n1)

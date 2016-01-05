@@ -4,39 +4,12 @@
 #Population structure previously determined. 
 ##perform association mapping for provided markers while correcting for multiple test.
 
-# GWAS.P3D = function(null.formula, Xt, multipleCorrection = T, method = "LR") {
-# 	#P3D0 allows previously defined P3D0, this might be useful if you are constantly testing you code for small number of markers  
-# 	
-# 	data=formToMatrix(null.formula)
-# 	y=data$y
-# 	X0=data$X
-# 	fit0=fitNULL(y,X=X0,Z=data$Z)		
-# 	whichNa =FaST0$whichNa
-# 	##remove non-variants
-# 	Xt=checkX(Xt,FaST0$n0,FaST0$whichNa)
-# 	 
-# 	if (multipleCorrection == T) {
-# 		Me = Meff(Xt)
-# 		cat("effective number of test is ", Me, "\n")
-# 	} else {
-# 		Me = 1
-# 	}
-# 	p.value = rep(NA, ncol(Xt))
-# 
-# 	p.value = apply(Xt, 2, function(a) {
-# 		testX(FaST0, fit0=fit0, Xt = a, method = method, P3D=T)$p.value * Me
-# 	})
-# 	return(list(Me = Me, p.value = p.value, H0var = Var))
-# }
 
-
-testX = function(fit0, Xt, methods = c("SSNP.P3D.LR")) {
+testX = function(fit0, Xtest, methods = c("SSNP.P3D.LR")) {
   #"SSNP.P3D.t","SSNP.LR","SSNP.t"
 	##Var is the variance for the NULL model, without fitting the test SNPs 
 	#P3D=T, NULL model and alternative model share the same variance components.	
-	##if Xt is NULL return NA
-
-	if(is.null(Xt)) return(NA)	
+	if(is.null(Xtest)) return(NA)	
 	if (class(fit0)=="FaST") {
 		#for t-test when P3D is False. Otherwise, use lm or lmm for fit0.
 		if(any(grepl("\\.P3D",methods)) | any(grepl("\\.LR",methods))) stop("must supply a fitted fit0 from fitNULL if P3D is true or if LR in methods")	
@@ -56,8 +29,8 @@ testX = function(fit0, Xt, methods = c("SSNP.P3D.LR")) {
 	 class.fit0=class(fit0)
 	 
 	 
-	Xt = as.matrix(Xt)
-	ntest = ncol(Xt)
+	Xtest = as.matrix(Xtest)
+	ntest = ncol(Xtest)
 	test = c((ncol(fit0$FaST$X) + 1):(ncol(fit0$FaST$X) + ntest))
 	
 
@@ -66,7 +39,7 @@ testX = function(fit0, Xt, methods = c("SSNP.P3D.LR")) {
 	 #this can be optimized (fit0 has its own ML likelihood) because we only need to get neg2logLik once. 
 	 FaST1=fit0$FaST
 	 rm("fit0")
-	 updateFaST.X(FaST1, X = cbind(FaST1$X, Xt))
+	 updateFaST.X(FaST1, X = cbind(FaST1$X, Xtest))
    n.beta=ncol(FaST1$X)
      
    namesout=c("LR","p.value","logML0","logML1","Var0","Var1")
@@ -80,7 +53,7 @@ testX = function(fit0, Xt, methods = c("SSNP.P3D.LR")) {
 	 P3D.methods=grep("\\.P3D",methods,value=T)
 	 NP.methods=setdiff(methods,P3D.methods)
 	
-	if (is.null(FaST1$U1)) {
+	if (FaST$method=="lm") {
 		##P3D is irrelavent for lm models
 		fit1 = fitNULL.FaST(FaST1)
 			if (length(LR.methods)>0) {

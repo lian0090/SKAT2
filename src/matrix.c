@@ -255,3 +255,31 @@ int nrxop,ncxop,nryop,ncyop;
     
 }
 
+SEXP C_matinv(SEXP R_A)
+{
+    PROTECT(R_A=AS_NUMERIC(R_A));
+    SEXP Rdimx;
+    PROTECT(Rdimx=getAttrib(R_A,R_DimSymbol));
+    int M, N;
+    if(isNull(Rdimx)){
+        if(length(R_A)==1){
+            M=1;
+            N=1;
+        }else{
+            error("X must be a matrix or scaler\n");
+        }
+    }else{
+        M=INTEGER(Rdimx)[0];
+        N=INTEGER(Rdimx)[1];
+        if(M!=N)error("must be square matrix\n");
+    }
+    SEXP R_z;
+    PROTECT(R_z=allocMatrix(REALSXP,N,N));
+    double *z;
+    z=NUMERIC_POINTER(R_z);
+    memcpy(z, REAL(R_A), sizeof(double)*N * N);
+    matinv(z,N);
+    UNPROTECT(3);
+    return(R_z);
+}
+

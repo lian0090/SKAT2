@@ -1,27 +1,22 @@
 ##return environments without dollar signs for variable names
-checkData=function(formula,data,getG=F,...){
+getFaST=function(formula,data=NULL,getG=T,Ztest=NULL,...){
   ##... further parameters passed to model.frame such as na.action
-  noGform=noCallPattern(formula,call.pattern=c(as.name(".eigenG"),as.name(".G")))
+  noGform=formula
+  RHS.noGform=noCallPattern(RHSForm(formula),call.pattern=c(as.name(".eigenG"),as.name(".G")))
+  if(is.null(RHS.noGform))RHSForm(noGform)<-1 else RHSForm(noGform)<-RHS.noGform
   environment(noGform)=environment(formula)
-  
   if (is.null(data)) {
     fr=model.frame(subflags(noGform),...)
   } else {
     fr=model.frame(subflags(noGform),data=data,...)
   }
-  #names(fr)=gsub(".*\\$(.*)$","\\1",names(fr))
-  #denv=list2env(fr)  
-  # denv=parent.env(environment())
-  # formula=as.formula(formula,env=denv)
   
   ##get a whole model.frame before you get X, y, Z to avoid environment contamination.
   #if(is.null(environment(formula)$n0)){
   whichNa=as.integer(attr(fr,"na.action"))
-  n0=nrow(fr)+length(whichNa)
-  # }else{
-  #  whichNa=environment(formula)$whichNa
-  #  n0=environment(formula)$n0
-  #}
+  n=nrow(fr)
+  n0=n+length(whichNa)
+  y <- model.response(fr)
   
   ##get fixed term
   fixedform <- noGform
@@ -35,59 +30,119 @@ checkData=function(formula,data,getG=F,...){
   X=model.matrix(fixedform,fr)
   if(ncol(X)==0)X=NULL
   
+  
   #get random term
-  bars=findCallPattern(RHSForm(formula),as.name(".R"))
-  if(is.null(bars))Z=NULL else{
-    Z=lapply(bars,FUN=function(x) model.matrix(as.formula(substitute(~-1+foo,list(foo=x[[2]]))),fr))
-    names(Z) <- unlist(lapply(bars, function(x) deparse(x[[2]])))
-  }
-  
-  y <- model.response(fr)
-  
-  
-  ##G and eigenG must be dealt with separately 
-  if(getG){
-    parsedterms0=findterms(formula)
-    whichEigenG=which(sapply(parsedterms0,function(a)ifelse(is.call(a),a[[1]]==quote(.eigenG),a==quote(.eigenG))))
-    whichG=which(sapply(parsedterms0,function(a)ifelse(is.call(a),a[[1]]==quote(.G),a==quote(.G))))
-    if(length(whichEigenG)>0){
-      ##this recomputes eigenG. There are more efficient ways of updating eigenG. Do it in a later time 
-      termEigenG=parsedterms0[[whichEigenG]][[2]]
-      termName=deparse(termEigenG)
-      eigenG<-eval(termEigenG)
-      if(class(eigenG)!="eigenG")stop(".eigenG() must be used on an eigenG object ")
-      if(length(whichNa)>0)eigenG<-getEigenG(Zg=sweep_prod(eigenG$U1[-whichNa,],sqrt(eigenG$d1),F,2))
-      listZw=Z
-    }else if(length(whichG)>0){
-      termG=parsedterms0[[whichG]][[2]]
-      termName=deparse(termG)
-      G<-eval(parsedterms0[[whichG]][[2]])
-      if(length(whichNa)>0)G<-G[-whichNa,-whichNa]
-      eigenG=getEigenG(G=G)
-      listZw=Z
-    }else if(!is.null(Z)){
-      ncolZ=sapply(Z,function(a){ncola=ncol(a);ifelse(is.null(ncola),1,ncola)})
-      whichMaxcol=which.max(ncolZ)
-      whichEigenG=ifelse(whichMaxcol,whichMaxcol,1)  
-      eigenG=getEigenG(Zg=Z[[whichEigenG]])
-      termName=names(Z)[whichEigenG]
-      if (length(Z) > 1) {
-        listZw = Z[-whichEigenG]
-      }else listZw=NULL
-    }else{
-      eigenG=NULL
-      listZw=NULL
-    }
-    if(!is.null(eigenG))attr(eigenG,"termName")=termName
+  method="lm"
+  out=list()
+  out$Z=NULL
+  Z=NULL
+  eigenG=NULL
+  listZw=NULL
+  listG=NULL
+  whichEigenG=NULL
+  n.randomTerm=0
+  namesRandomTerm=NULL
+  if(!getG){
+    bars=findCallPattern(RHSForm(formula),".R")
+    if(!is.null(bars)){
+      Z=lapply(bars,FUN=function(x) model.matrix(as.formula(substitute(~-1+foo,list(foo=x[[2]]))),fr))
+      namesRandomTerm= unlist(lapply(bars, function(x) deparse(x[[2]])))
+      names(Z) <-namesRandomTerm
+      n.randomTerm=length(Z)
+      }
+    out=list(Z=Z,X=X,y=y,whichNa=whichNa,n0=n0,eigenG=eigenG,listZw=listZw,fr=fr,listG=listG,method=method,whichFaST=whichEigenG,n.randomTerm=n.randomTerm,namesRandomTerm=namesRandomTerm)
   }else{
-    eigenG=NULL
-    listZw=NULL
-  }
+    #default eigenG, listZw are NULL, default method is "lm"
+    randomTerm=findCallPattern(formula,c(".R",".G",".eigenG"))
+    if(is.null(randomTerm)){
+      out=list(Z=Z,X=X,y=y,whichNa=whichNa,n0=n0,eigenG=eigenG,listZw=listZw,fr=fr,listG=listG,method=method,whichFaST=whichEigenG,n.randomTerm=n.randomTerm,namesRandomTerm=namesRandomTerm)
+    }else{
+      n.randomTerm=length(randomTerm)
+      listRandomTerm=vector(mode="list",length=n.randomTerm)
+      termFlag=rep(NA,n.randomTerm)
+      namesRandomTerm=rep(NA,n.randomTerm)
+      kw=rep(0,n.randomTerm)
+      for(i in 1:n.randomTerm){
+        listRandomTerm[[i]]=list(Z=NULL,G=NULL,eigenG=NULL)
+        termFlag[i]=deparse(randomTerm[[i]][[1]])
+        trueTerm=randomTerm[[i]][[2]]
+        namesRandomTerm[i]=deparse(trueTerm)
+        if(termFlag[i]==".G"){
+          G<-eval(trueTerm)
+          if(length(whichNa)>0)G<-G[-whichNa,-whichNa]
+          eigenG=getEigenG(G=G)
+          kw[i]=length(eigenG$d1)
+          listRandomTerm[[i]]$G=G
+          listRandomTerm[[i]]$eigenG=eigenG
+        }
+        if(termFlag[i]==".eigenG"){
+          eigenG<-eval(trueTerm)
+          if(length(whichNa)>0)eigenG<-getEigenG(Zg=sweep_prod(eigenG$U1[-whichNa,],sqrt(eigenG$d1),F,2))
+          kw[i]=length(eigenG$d1)
+          listRandomTerm[[i]]$eigenG=eigenG
+        }
+        if(termFlag[i]==".R"){
+          Z=model.matrix(as.formula(substitute(~-1+trueTerm,list(trueTerm=trueTerm))),fr)
+          eigenG<-getEigenG(Zg=Z)
+          kw[i]=length(eigenG$d1)
+          listRandomTerm[[i]]$Z=Z
+          listRandomTerm[[i]]$eigenG=eigenG
+        }
+      }
+      ##re-set eigenG to NULL  
+      eigenG=NULL
+      whichEigenG=which.max(kw)
+      kwT=sum(kw[-whichEigenG])
+      if(kwT>=n){
+        method="brute"
+        listG=vector(mode="list",length=n.randomTerm)
+        names(listG)=namesRandomTerm
+        for(i in 1:n.randomTerm){
+          if(is.null(listRandomTerm[[i]]$G)){
+            listG[[i]]=with(listRandomTerm[[i]]$eigenG,tcrossprod(sweep_prod(U1,sqrt(d1),F,2)))
+          }else{
+            listG[[i]]=listRandomTerm[[i]]$G
+          }
+        }
+        out=list(Z=Z,X=X,y=y,whichNa=whichNa,n0=n0,eigenG=eigenG,listZw=listZw,fr=fr,listG=listG,method=method,whichFaST=whichEigenG,n.randomTerm=n.randomTerm,namesRandomTerm=namesRandomTerm)
+        
+        
+      
+        }else{
+        method="FaST"
+        eigenG=listRandomTerm[[whichEigenG]]$eigenG
+        attr(eigenG,"termName")=namesRandomTerm[whichEigenG]
+        listRandomTerm=listRandomTerm[-whichEigenG]
+        n.randomTerm=n.randomTerm-1
+        if(n.randomTerm>0){
+          listZw=vector(mode="list",n.randomTerm)
+          for(i in 1:n.randomTerm){
+            listZw[[i]]=with(listRandomTerm[[i]]$eigenG,sweep_prod(U1,sqrt(d1),F,2))
+          }
+          names(listZw)=namesRandomTerm[-whichEigenG]
+        }
+        out=list(Z=Z,X=X,y=y,whichNa=whichNa,n0=n0,eigenG=eigenG,listZw=listZw,fr=fr,listG=listG,method=method,whichFaST=whichEigenG,n.randomTerm=n.randomTerm,namesRandomTerm=namesRandomTerm)
+        out$U1 = eigenG$U1
+        out$d1 = eigenG$d1
+        out$nd = length(out$d1)
+        out$n=length(out$y)
+        out$tU1y = crossprod(out$U1, out$y)
+        if (out$nd < out$n) {
+          out$tyy = sum(out$y^2)
+        }
+        #must be outside of if!(is.null(Z)), otherwise, X and Ztest will not be updated into FaST
+        updateFaST.X(out, X)
+        updateFaST.Zw(out, listZw)
+        updateFaST.Ztest(out, Ztest)
+      }      
+    }         
+  } 
   
-  return(list(Z=Z,X=X,y=y,whichNa=whichNa,n0=n0,eigenG=eigenG,listZw=listZw,fr=fr))
+  out$formula=formula
+  class(out) = c("FaST")
+  return(out)
   
 }
-
 
 asCall=function(a){
   a=as.formula(paste("~",a))
@@ -210,8 +265,12 @@ findTrueTerms=function(term){
   
 }
 
-#find .eigenG 
-noCallPattern=function(term,call.pattern=c(as.name(".eigenG"),as.name(".G"))){
+#remove call pattern from formula,if one argument of a Call argument goes to NULL, this Call also diappears
+#~.G(a) becomes NULL
+#y~.G(a) becomes y
+#y~.G(a)+b becomes y~.G(a)
+noCallPattern=function(term,call.pattern=c(".eigenG",".G")){
+  call.pattern=sapply(call.pattern,as.name)
   if (!any(sapply(call.pattern,function(a)deparse(a)%in%all.names(term)))) 
     return(term)
   if (is.call(term) && any(sapply(call.pattern,function(a)term[[1]]==a))) return(NULL) 
@@ -235,17 +294,16 @@ noCallPattern=function(term,call.pattern=c(as.name(".eigenG"),as.name(".G"))){
 
 ##return a list of items that has call.pattern
 findCallPattern=function(term,call.pattern){
-  
+  call.pattern=sapply(call.pattern,as.name)
   #call.pattern=as.name(".eigenG")
-  if(length(call.pattern)!=1)stop("call.pattern must be have only 1 term\n")
   fc=function(term,call.pattern){
     if (is.name(term) || !is.language(term)) 
       return(NULL)
-    if (term[[1]] == call.pattern) 
+    if (any(sapply(call.pattern,function(a)term[[1]]==a)))
       return(term)
     if (length(term) == 2) 
       return(fc(term[[2]],call.pattern))
-    c(fc(term[[2]],call.pattern), fc(term[[3]],call.pattern))
+    return(c(fc(term[[2]],call.pattern), fc(term[[3]],call.pattern)))
   }
   term=fc(term,call.pattern)
   if(!is.list(term) & !is.null(term))term=list(term)
@@ -263,32 +321,10 @@ LHSForm <- function(formula) {
 
 
 
-getFaST = function(formula,data=NULL,Zt = NULL) {
-  out=checkData(formula,data,getG=T)
-  eigenG<-out$eigenG
-  if(!is.null(eigenG)){
-    ##need more careful check to deal with Na
-    out$U1 = eigenG$U1
-    out$d1 = eigenG$d1
-    out$nd = length(out$d1)
-    out$n=length(out$y)
-    out$tU1y = crossprod(out$U1, out$y)
-    if (out$nd < out$n) {
-      out$tyy = sum(out$y^2)
-    }
-  }
-  #must be outside of if!(is.null(Z)), otherwise, X and Zt will not be updated i nto FaST
-  updateFaST.X(out, out$X)
-  updateFaST.Zw(out, out$listZw)
-  updateFaST.Zt(out, out$Zt)
-  out$formula=formula
-  class(out) = c("FaST")
-  return(out)
-}
 
 #currently only add more terms to Fast
 # should be able to replace and subtract in the future
-##do not update Zt.
+##do not update Ztest.
 
 FaST.add<-function(FaST,newformula,data=NULL){
   #... further arguments passed to data.frame.
@@ -373,7 +409,7 @@ updateFaST.Zw = function(FaST, listZw) {
         FaST[["tXW"]] = crossprod(FaST$X, Zw)
         FaST[["tWW"]] = crossprod(Zw)
         FaST[["tWy"]] = crossprod(Zw, FaST$y)
-        if (!is.null(FaST$Zt)) FaST[["tWZt"]] = crossprod(Zw, FaST$Zt)
+        if (!is.null(FaST$Ztest)) FaST[["tWZt"]] = crossprod(Zw, FaST$Ztest)
       }
     }))
   }else{
@@ -398,31 +434,30 @@ updateFaST.X = function(FaST, X) {
       }
     }
   }
-eval.parent(substitute({
-  FaST[["X"]] = X
-  FaST[["tU1X"]] = NULL
-  FaST[["tXX"]] = NULL
-  FaST[["tXy"]] = NULL
-  FaST[["tXW"]] = NULL
-  FaST[["tXZt"]] = NULL
-}))
-
-eval.parent(substitute({
-  
-  if (!is.null(FaST$U1)) {
-    FaST[["tU1X"]] = crossprod(FaST$U1, X)
-    
-    if (FaST$nd < FaST$n) {
-      FaST[["tXX"]] = crossprod(X)
-      FaST[["tXy"]] = crossprod(X, FaST$y)
-      if (!is.null(FaST$Zw)) FaST[["tXW"]] = crossprod(X, FaST$Zw)
-      if (!is.null(FaST$Zt)) FaST[["tXZt"]] = crossprod(X, FaST$Zt)
+  eval.parent(substitute({
+    FaST[["X"]] = X
+    FaST[["tU1X"]] = NULL
+    FaST[["tXX"]] = NULL
+    FaST[["tXy"]] = NULL
+    FaST[["tXW"]] = NULL
+    FaST[["tXZt"]] = NULL
+  }))
+  if (FaST$method=="FaST"){   
+  eval.parent(substitute(
+   {
+      FaST[["tU1X"]] = crossprod(FaST$U1, X)
+      if (FaST$nd < FaST$n) {
+        FaST[["tXX"]] = crossprod(X)
+        FaST[["tXy"]] = crossprod(X, FaST$y)
+        if (!is.null(FaST$Zw)) FaST[["tXW"]] = crossprod(X, FaST$Zw)
+        if (!is.null(FaST$Ztest)) FaST[["tXZt"]] = crossprod(X, FaST$Ztest)
+      }
     }
+  ))
   }
-}))
 }
 
-updateFaST.Zt = function(FaST, Zt) {
+updateFaST.Ztest = function(FaST, Ztest) {
   eval.parent(substitute({
     FaST[["tU1Zt"]] = NULL
     FaST[["tyZt"]] = NULL
@@ -430,40 +465,40 @@ updateFaST.Zt = function(FaST, Zt) {
     FaST[["tZtZt"]] = NULL
     FaST[["tWZt"]] = NULL
   }))
-  if (!is.null(Zt)) {
+  if (!is.null(Ztest)) {
     
-    if(nrow(Zt)==FaST$n0){if(length(FaST$whichNa)>0)Zt=Zt[-FaST$whichNa,]}else{
-      if (nrow(Zt) != FaST$n) {
-        stop("Zt must have the same number of rows as the original y or the current y")
+    if(nrow(Ztest)==FaST$n0){if(length(FaST$whichNa)>0)Ztest=Ztest[-FaST$whichNa,]}else{
+      if (nrow(Ztest) != FaST$n) {
+        stop("Ztest must have the same number of rows as the original y or the current y")
       }
     }
-    varXt = apply(Zt, 2, function(a) var(a, na.rm = T))
+    varXt = apply(Ztest, 2, function(a) var(a, na.rm = T))
     whichVar = which(varXt > 0)
     if (length(whichVar) > 0) {
-      Zt = Zt[, whichVar, drop = F]
+      Ztest = Ztest[, whichVar, drop = F]
     } else {
-      warning("No variants in Zt")
-      Zt = NULL
+      warning("No variants in Ztest")
+      Ztest = NULL
     }
     eval.parent(substitute({
-      FaST[["Zt"]] = Zt
-      if (!is.null(Zt)) {
+      FaST[["Ztest"]] = Ztest
+      if (!is.null(Ztest)) {
         if (!is.null(FaST$U1)) {
-          FaST$tU1Zt = crossprod(FaST$U1, Zt)
+          FaST$tU1Zt = crossprod(FaST$U1, Ztest)
           if (FaST$nd < FaST$n) {
-            FaST[["tyZt"]] = crossprod(FaST$y, Zt)
-            FaST[["tXZt"]] = crossprod(FaST$X, Zt)
-            FaST[["tZtZt"]] = crossprod(Zt)
+            FaST[["tyZt"]] = crossprod(FaST$y, Ztest)
+            FaST[["tXZt"]] = crossprod(FaST$X, Ztest)
+            FaST[["tZtZt"]] = crossprod(Ztest)
             if (!is.null(FaST$Zw)) {
-              FaST[["tWZt"]] = crossprod(FaST$Zw, Zt)
+              FaST[["tWZt"]] = crossprod(FaST$Zw, Ztest)
             }
           }
         }
       }
     }))
-  
+    
   }else{
-    FaST[["Zt"]] = NULL  ##do this lage, if Zt is from FaST$Zt, then setting FaST[["Zt"]] to NULL also will set Zt to NULL
+    FaST[["Ztest"]] = NULL  ##do this lage, if Ztest is from FaST$Ztest, then setting FaST[["Zt"]] to NULL also will set Ztest to NULL
   }
 }
 

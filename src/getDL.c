@@ -198,7 +198,7 @@ SEXP C_getDL(SEXP R_var_e, SEXP R_taud, SEXP R_d1, SEXP R_n, SEXP R_tU1y, SEXP R
 	matprod(hat_alpha,kx,1,tXVdW,kx,kwT,tehatVdW,'T','N',-1,1);	
     }
      
-    if(getNeg2Log==1){
+    if(getNeg2Log){
     	//tU1_ehat
     	double *tU1_ehat;
     	tU1_ehat = (double *)R_alloc(kd,sizeof(double));
@@ -253,9 +253,10 @@ SEXP C_getDL(SEXP R_var_e, SEXP R_taud, SEXP R_d1, SEXP R_n, SEXP R_tU1y, SEXP R
     		neg2logLik3=tehat_Vd_ehat-tehat_Vd_W_Cgamma_tW_Vd_ehat;
 		}
 		
-		neg2logLik2=determinant(tXVinvX,kx,1);
+		
 		double neg2logLik;
-		if(REML==1){
+		if(REML){
+		    neg2logLik2=determinant(tXVinvX,kx,1);
 			neg2logLik=neg2logLik1+neg2logLik2+neg2logLik3;
 			//compatible with emma
    			//out<- sum(neg2logLik1,neg2logLik2,neg2logLik3)+(n-kx)*log(2*pi)-log(det(tXX))
@@ -268,7 +269,7 @@ SEXP C_getDL(SEXP R_var_e, SEXP R_taud, SEXP R_d1, SEXP R_n, SEXP R_tU1y, SEXP R
 		}
     
     
-	if(getQ==1|getS==1){
+	if(getQ|getS){
         
 		if(ISNA(tU1Zt[0]))error("tU1Zt is NULL, cannot get Q and S");
         int kt= INTEGER(getAttrib(R_tU1Zt,R_DimSymbol))[1];

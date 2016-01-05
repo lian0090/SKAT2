@@ -77,50 +77,27 @@ tr=function(X){
 	return(out)
 }	
 
-fit.optim = function(FaST, VarRel=NULL, logVar = T, optimizer = "bobyqa") {
-	VarReduced=reduceInitVar(FaST$nw,VarRel)
+
 	
-	if (optimizer == "optim") {
-		fit <- optim(par = VarReduced, fn = neg2LogVarReduced, FaST=FaST,VarRel=VarRel, logVar = logVar, REML=T)
-	}
-	#The default fitting algorithm in lmer function
 	
-    if (optimizer == "bobyqa") {
-		tmpfit <- bobyqa(par = VarReduced, fn = neg2LogVarReduced, FaST=FaST, VarRel=VarRel, logVar = logVar, REML=T)
-		fit = list()
-		fit$par = tmpfit$par
-		fit$value = tmpfit$fval
-		fit$counts = tmpfit$feval
-		fit$convergence = tmpfit$ierr
-		fit$message = tmpfit$msg
-	}
-	if (is.na(fit$value)) {
-		stop("objective function returned NA, please check input values")
-	}
-	namesPar=names(VarReduced)
-	names(fit$par) = namesPar
-	Var = fit$par
-	Var = expandVar(Var, logVar, VarRel)
-	fit$Var = Var
- 
-  if(length(fit$Var)>2){
-    names(fit$Var)=c("var_e",attr(FaST$eigenG,"termName"),names(FaST$listZw))
-  }else{
-    names(fit$Var)[1:2]=c("var_e",attr(FaST$eigenG,"termName"))
-  }
-	fit$par=NULL
-  fit$loglikREML = -1/2 * fit$value
-  fit$value=NULL
-	return(fit)
-
-}
 
 
-fitNULL=function(null.formula,data=NULL){
-   ##Var0: variance for NULL model
-   FaST=getFaST(null.formula,data=data)
-   out=fitNULL.FaST(FaST)
-   return(out)
+
+fitNULL=function(null.formula,data=NULL){ 
+   RandomTerm=findCallPattern(null.formula,c(".R",".G",".eigenG"))
+   if(!is.null(RandomTerm)){
+     FaST=getFaST(null.formula,data=data)
+     out=fitNULL.FaST(FaST)
+     return(out)
+   }else{
+     out=lm(null.formula,data=data)
+     out$FaST=getFaST(null.formula,data=data)
+     out$Var=summary(out)$sigma^2
+     names(out$Var)="var_e"
+     out$loglik=logLik(out,REML=T)
+     class(out)="lm"
+     return(out) 
+   }
   }
 
 #FaST changed, but Var not changing, for P3D methods
@@ -128,48 +105,45 @@ updatefitNULLFaST=function(fit0,FaST){
   if(class(fit0)=="lm") stop("cannot update fit0 inherited from lm")
   fit0$FaST=FaST
   #fit0$loglikML=-1/2*getDL(fit0$Var, FaST, getNeg2Log = T, REML = F)$neg2logLik
+  if(FaST$method=="FaST"|FaST$method=="brute"){
   fit0$loglikREML=-1/2*getDL(fit0$Var, FaST, getNeg2Log = T, REML = T)$neg2logLik
+  }
+}
+
+neg2Log=function(Var,FaST,logVar,REML){
+  #logVar:whether the input Var is in log scale.
+  if(logVar)Var=exp(Var)
+  getDL(Var, FaST, getNeg2Log = T, REML = REML)$neg2logLik
 }
 
 fitNULL.FaST=function(FaST){
-   y=FaST$y
-   X=FaST$X
-   if (is.null(FaST$U1)) {
-     out=lm(y~-1+X)
-	   out$FaST=FaST
-	   out$Var=summary(out)$sigma^2
-	   names(out$Var)="var_e"
-	   out$loglik=logLik(out,REML=T)
-	   class(out)="lm"
-	   return(out)
-	} else {
-    out=fit.optim(FaST, VarRel=NULL,logVar = T,  optimizer = "bobyqa" )
+  method=FaST$method
+  if(method=="FaST"|method=="brute"){
+    n.Var=FaST$n.randomTerm+1
+    Var=rep(0.5,n.Var)
+    tmpfit <- bobyqa(par = Var, fn = neg2Log, FaST=FaST,logVar = T, REML=T)
+    Var = exp(tmpfit$par)
+    names(Var)=FaST$namesRandomTerm
+    tmpfit$value = tmpfit$fval 
+    out = list()
+    out$counts = tmpfit$feval
+    out$convergence = tmpfit$ierr
+    out$message = tmpfit$msg    
+    if (is.na(tmpfit$value)) {
+      stop("objective function returned NA, please check input values")
+    }
+    out$Var = Var
+    out$loglikREML = -1/2 * tmpfit$value
     out$FaST=FaST
-    class(out) = c("lmm")
+    class(out)="lmm" 
     return(out)
-	  }	
+  }else stop("only FaST and brute are supported in fitNULL.FaST")  
 }
 
 
 
 
-neg2LogVarReduced = function(VarReduced, FaST, VarRel=NULL, logVar = T, REML = T) {
-
-	Var=expandVar(VarReduced, logVar, VarRel)
-
-	out <- getDL(Var, FaST, getNeg2Log = T, REML = REML)$neg2logLik
-
-	return(out)
-}
 
 
-#interface for getting loglikelihood for Var
-getLoglik = function(Var, y, X, Z, REML = T) {	
-	FaST=getFaST(y=y,X=X,Z=Z)
-	
-	out = getDL(Var,FaST, getNeg2Log = T, REML = REML)$neg2logLik
-	out = -1/2 * out
-	return(out)
-}
 
 
