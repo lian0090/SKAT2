@@ -113,10 +113,10 @@ getFaST=function(formula,data=NULL,getG=T,Ztest=NULL,...){
         eigenG=listRandomTerm[[whichEigenG]]$eigenG
         attr(eigenG,"termName")=namesRandomTerm[whichEigenG]
         listRandomTerm=listRandomTerm[-whichEigenG]
-        n.randomTerm=n.randomTerm-1
-        if(n.randomTerm>0){
-          listZw=vector(mode="list",n.randomTerm)
-          for(i in 1:n.randomTerm){
+        nw=n.randomTerm-1
+        if(nw>0){
+          listZw=vector(mode="list",nw)
+          for(i in 1:nw){
             listZw[[i]]=with(listRandomTerm[[i]]$eigenG,sweep_prod(U1,sqrt(d1),F,2))
           }
           names(listZw)=namesRandomTerm[-whichEigenG]

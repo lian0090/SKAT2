@@ -123,7 +123,7 @@ fitNULL.FaST=function(FaST){
     Var=rep(0.5,n.Var)
     tmpfit <- bobyqa(par = Var, fn = neg2Log, FaST=FaST,logVar = T, REML=T)
     Var = exp(tmpfit$par)
-    names(Var)=FaST$namesRandomTerm
+    names(Var)=c("var_e",FaST$namesRandomTerm)
     tmpfit$value = tmpfit$fval 
     out = list()
     out$counts = tmpfit$feval
