@@ -1,23 +1,23 @@
 ##functions
-getEigenG=function(G=NULL,Zg=NULL,precision=1e-5){
+getEigenG=function(G=NULL,Z=NULL,precision=1e-5){
   out=list()
-  if(!is.null(G) & !is.null(Zg)) stop("Only use one of G or Zg")
-  if(is.null(G) & is.null(Zg)) stop("Provide G or Zg")
-  if(!is.null(Zg)){
-  	Zg=as.matrix(Zg)
-  	if(any(is.na(Zg))){
-  		Zg=meanImpute(Zg)
-  	}
-  	if(nrow(Zg)<=ncol(Zg)) {
-  		G=tcrossprod(Zg)
-  	    eigenG=eigen(G,symmetric=T)
-    	U1=eigenG$vectors
-    	d1=eigenG$values	
-  	}else{
-  	svdZg=svd(Zg,nv=0)
-    U1=svdZg$u
-    d1=svdZg$d^2 ###Do not forget d^2!!!
-  	}
+  if(!is.null(G) & !is.null(Z)) stop("Only use one of G or Z")
+  if(is.null(G) & is.null(Z)) stop("Provide G or Z")
+  if(!is.null(Z)){
+    Z=as.matrix(Z)
+    if(any(is.na(Z))){
+      Z=meanImpute(Z)
+    }
+    if(nrow(Z)<=ncol(Z)) {
+      G=tcrossprod(Z)
+      eigenG=eigen(G,symmetric=T)
+      U1=eigenG$vectors
+      d1=eigenG$values	
+    }else{
+      svdZ=svd(Z,nv=0)
+      U1=svdZ$u
+      d1=svdZ$d^2 ###Do not forget d^2!!!
+    }
   }else{
     eigenG=eigen(G,symmetric=T)
     U1=eigenG$vectors
@@ -26,9 +26,9 @@ getEigenG=function(G=NULL,Zg=NULL,precision=1e-5){
   
   wh0=which(d1<precision)
   if(length(wh0>0)){
-  	d1=d1[-wh0] 
-  	U1=U1[,-wh0]
- 	}
+    d1=d1[-wh0] 
+    U1=U1[,-wh0]
+  }
   
   out$d1=d1
   out$U1=U1

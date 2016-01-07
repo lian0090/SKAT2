@@ -77,13 +77,13 @@ getFaST=function(formula,data=NULL,getG=T,Ztest=NULL,...){
         }
         if(termFlag[i]==".eigenG"){
           eigenG<-eval(trueTerm)
-          if(length(whichNa)>0)eigenG<-getEigenG(Zg=sweep_prod(eigenG$U1[-whichNa,],sqrt(eigenG$d1),F,2))
+          if(length(whichNa)>0)eigenG<-getEigenG(Z=sweep_prod(eigenG$U1[-whichNa,],sqrt(eigenG$d1),F,2))
           kw[i]=length(eigenG$d1)
           listRandomTerm[[i]]$eigenG=eigenG
         }
         if(termFlag[i]==".R"){
           Z=model.matrix(as.formula(substitute(~-1+trueTerm,list(trueTerm=trueTerm))),fr)
-          eigenG<-getEigenG(Zg=Z)
+          eigenG<-getEigenG(Z=Z)
           kw[i]=length(eigenG$d1)
           listRandomTerm[[i]]$Z=Z
           listRandomTerm[[i]]$eigenG=eigenG
