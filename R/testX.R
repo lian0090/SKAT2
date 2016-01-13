@@ -53,7 +53,7 @@ testX = function(fit0, Xtest, methods = c("SSNP.P3D.LR")) {
 	 P3D.methods=grep("\\.P3D",methods,value=T)
 	 NP.methods=setdiff(methods,P3D.methods)
 	
-	if (FaST$method=="lm") {
+	if (fit0$FaST$method=="lm") {
 		##P3D is irrelavent for lm models
 		fit1 = fitNULL.FaST(FaST1)
 			if (length(LR.methods)>0) {

@@ -32,16 +32,17 @@ getFaST=function(formula,data=NULL,getG=T,Ztest=NULL,...){
   
   
   #get random term
+  #do not set default values for eigenG and G, because they will be evaluated from the input formula. It is safter to not set up these values here.
   method="lm"
   out=list()
   out$Z=NULL
   Z=NULL
-  eigenG=NULL
   listZw=NULL
   listG=NULL
   whichEigenG=NULL
   n.randomTerm=0
   namesRandomTerm=NULL
+ # eigenG=NULL
   if(!getG){
     bars=findCallPattern(RHSForm(formula),".R")
     if(!is.null(bars)){
@@ -49,13 +50,13 @@ getFaST=function(formula,data=NULL,getG=T,Ztest=NULL,...){
       namesRandomTerm= unlist(lapply(bars, function(x) deparse(x[[2]])))
       names(Z) <-namesRandomTerm
       n.randomTerm=length(Z)
-      }
-    out=list(Z=Z,X=X,y=y,whichNa=whichNa,n0=n0,eigenG=eigenG,listZw=listZw,fr=fr,listG=listG,method=method,whichFaST=whichEigenG,n.randomTerm=n.randomTerm,namesRandomTerm=namesRandomTerm)
+      }else Z=NULL
+    out=list(Z=Z,X=X,y=y,whichNa=whichNa,n0=n0,eigenG=NULL,listZw=NULL,fr=fr,listG=NULL,method="lm",whichFaST=NULL,n.randomTerm=n.randomTerm,namesRandomTerm=namesRandomTerm)
   }else{
     #default eigenG, listZw are NULL, default method is "lm"
     randomTerm=findCallPattern(formula,c(".R",".G",".eigenG"))
     if(is.null(randomTerm)){
-      out=list(Z=Z,X=X,y=y,whichNa=whichNa,n0=n0,eigenG=eigenG,listZw=listZw,fr=fr,listG=listG,method=method,whichFaST=whichEigenG,n.randomTerm=n.randomTerm,namesRandomTerm=namesRandomTerm)
+      out=list(Z=Z,X=X,y=y,whichNa=whichNa,n0=n0,eigenG=NULL,listZw=NULL,fr=fr,listG=listG,method="lm",whichFaST=NULL,n.randomTerm=n.randomTerm,namesRandomTerm=namesRandomTerm)
     }else{
       n.randomTerm=length(randomTerm)
       listRandomTerm=vector(mode="list",length=n.randomTerm)
@@ -68,15 +69,15 @@ getFaST=function(formula,data=NULL,getG=T,Ztest=NULL,...){
         trueTerm=randomTerm[[i]][[2]]
         namesRandomTerm[i]=deparse(trueTerm)
         if(termFlag[i]==".G"){
-          G<-eval(trueTerm)
+          G<-eval(trueTerm,envir=environment(formula))
           if(length(whichNa)>0)G<-G[-whichNa,-whichNa]
-          eigenG=getEigenG(G=G)
+          eigenG=getEigenG(G=G,envir=environment(formula))
           kw[i]=length(eigenG$d1)
           listRandomTerm[[i]]$G=G
           listRandomTerm[[i]]$eigenG=eigenG
         }
         if(termFlag[i]==".eigenG"){
-          eigenG<-eval(trueTerm)
+          eigenG<-eval(trueTerm,envir=environment(formula))#if we do not set envir, if trueTerm also is called eigenG, then eigenG value set in this function before this line is used.
           if(length(whichNa)>0)eigenG<-getEigenG(Z=sweep_prod(eigenG$U1[-whichNa,],sqrt(eigenG$d1),F,2))
           kw[i]=length(eigenG$d1)
           listRandomTerm[[i]]$eigenG=eigenG

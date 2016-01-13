@@ -6,7 +6,7 @@ test_that("Var and loglik",{
   Z2=mouse.X[,21:40]
   fit0=fitNULL(Obesity.BMI~GENDER+.eigenG(mouse.eigenG)+.R(Z1),data=mouse.pheno)
   a= c(2.284943e-03, 1.221593e-07, 1.373424e-10)
-  names(a)=c("var_e","mouse.G","Z1")
+  names(a)=c("var_e","mouse.eigenG","Z1")
   expect_equal(fit0$Var,a,tolerance = 1e-5)
     })
 
