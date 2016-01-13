@@ -193,42 +193,21 @@ testZ(fit0,testMat,methods=c("Score","SKAT"))
 
 ### Step 1,  fit the NULL model to get the population parameters
 ```R
-fit0=fitNULL(y~X1+.eigenG(eigenG))
-testX(fit0,Xt=Z1[,1])
+n=500
+  p=20
+  pheno=mouse.pheno[1:n,]
+  Z1=mouse.X[1:n,1:p]
+  X=cbind(model.matrix(~pheno$GENDER)[,-1],pheno$CageDensity)
+  y=pheno$Obesity.BMI
+  G=tcrossprod(scale(mouse.X[1:n,],T,F))
+  eigenG=getEigenG(G=G)
+  fit0=fitNULL(y~X+.eigenG(eigenG),data=pheno)
+  out=testX(fit0,Z1[,1])
 ```
 Output
 ```R
-$p.value
-[1] 0.8228676
-
-> fit0=fitNULL(y~X1+.eigenG(eigenG)+.R(Z1))
-> testX(fit0,Z2[,1])
-$LR
- SSNP.P3D.LR 
-7.527054e-05 
-
-$p.value
 SSNP.P3D.LR 
-  0.9930778 
-
-$logML0
-SSNP.P3D.LR 
-     628.26 
-
-$logML1
-SSNP.P3D.LR 
-     628.26 
-
-$Var0
-$Var0$SSNP.P3D.LR
-        VarE         VarG        VarW1 
-2.273050e-03 7.077773e-07 2.251884e+02 
-
-
-$Var1
-$Var1$SSNP.P3D.LR
-        VarE         VarG        VarW1 
-2.273050e-03 7.077773e-07 2.251884e+02 
+  0.8228676 
 ```
 ##Full rank random effects, the bruteforce methods
 This is still under testing
