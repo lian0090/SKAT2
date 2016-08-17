@@ -14,6 +14,22 @@ print.lmm<-function(fit0){
   print(fit0$Var) 
 }
 
+
+##try to make the GWAS function easier to use. In the form of NULL.form and test.form. windowby.NULL, windowby.test
+# GWAS2=function(Null.form,test.form,data=NULL,setsize=20,sets=NULL,methods=NULL){
+
+# #if mehtods is supplied, it will supersede the formula, and test the last term as specified by methods. 
+  
+  # #methods=c("Score", "SKAT","SSNP.P3D.LR","SSNP.P3D.t")[1]
+  # #the test method for the last term is based on the 
+  # #get information for GxE terms
+  
+  # #make sure input are formula
+  # if(class(NULL.formula)!="formula"){stop("NULL.formula must be a formula")}
+  # if(class(test.formula)!="formula"){stop("test.formula must be a formula")}
+ 	
+# }
+
 # # #GWAS on a marker windows .
 GWAS= function(formula, GxE.formula, data=NULL, setsize=20, sets=NULL, methods = NULL) {
   #if mehtods is supplied, it will supersede the formula, and test the last term as specified by methods. 

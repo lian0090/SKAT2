@@ -17,15 +17,15 @@ testZ = function(fit0, Ztest, methods = "Score") {
     s2 = summary(fit0)$sigma^2
     Q = sum(crossprod(resid, Ztest)^2)/s2/2
     tXZt = crossprod(X, Ztest)
-    Zw.1 = (crossprod(Ztest) - t(tXZt) %*% solve(crossprod(X)) %*% tXZt)/2
-    lambda = eigen(Zw.1, symmetric = TRUE, only.values = TRUE)$values    
+    tZtPZts2 = (crossprod(Ztest) - t(tXZt) %*% solve(crossprod(X)) %*% tXZt)
+    lambda = eigen(tZtPZts2 , symmetric = TRUE, only.values = TRUE)$values/2    
     if ("SKAT" %in% methods) {
       out$p.value['SKAT'] <- Get_PValue.Lambda(lambda, Q)$p.value
       out$Q = Q
     }
     if ("Score" %in% methods) {
-      varS = (sum(Zw.1^2)/(s2^2))/2
-      S = (Q - (sum(diag(Zw.1))))/s2
+      varS = (sum(tZtPZts2 ^2)/(s2^2))/2
+      S = (Q - (sum(diag(tZtPZts2)))/2)/s2
       out$Score = S
       out$sdScore = sqrt(varS)
       out$p.value['Score'] = pnorm(S, mean = 0, sd = sqrt(varS), lower.tail = F)
